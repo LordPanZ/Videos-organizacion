@@ -13,6 +13,7 @@ const STARTER_TOPICS: { name: string; color: string; icon: string }[] = [
   { name: 'Cocina', color: '#ff9f43', icon: '🍳' },
   { name: 'Deporte', color: '#26de81', icon: '🏃' },
   { name: 'Tecnología', color: '#45aaf2', icon: '💻' },
+  { name: 'Inteligencia artificial', color: '#7c5cff', icon: '🤖' },
   { name: 'Humor', color: '#fed330', icon: '😂' },
   { name: 'Viajes', color: '#2bcbba', icon: '✈️' },
   { name: 'Noticias', color: '#fc5c65', icon: '📰' },

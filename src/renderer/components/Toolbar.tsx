@@ -29,10 +29,12 @@ export interface ToolbarProps {
   onOpenHelp(): void;
   onOpenSettings(): void;
   searchRef: React.RefObject<HTMLInputElement | null>;
+  /** False on screens that do not show the grid, where sorting and layout have nothing to act on. */
+  browsing: boolean;
 }
 
 /** Search box, sorting, layout switch and the primary add action. */
-export function Toolbar({ onAdd, onOpenHelp, onOpenSettings, searchRef }: ToolbarProps) {
+export function Toolbar({ onAdd, onOpenHelp, onOpenSettings, searchRef, browsing }: ToolbarProps) {
   const { query, setQuery, runQuery, sort, setSort, layout, setLayout, cardSize, setCardSize, total, loading, toggleSidebar } =
     useLibrary();
   const [draft, setDraft] = useState(query);
@@ -93,7 +95,7 @@ export function Toolbar({ onAdd, onOpenHelp, onOpenSettings, searchRef }: Toolba
 
       <div className="spacer" />
 
-      {(layout === 'grid' || layout === 'masonry') && (
+      {browsing && (layout === 'grid' || layout === 'masonry') && (
         <input
           type="range"
           min={150}
@@ -106,42 +108,46 @@ export function Toolbar({ onAdd, onOpenHelp, onOpenSettings, searchRef }: Toolba
         />
       )}
 
-      <select
-        className="select"
-        style={{ width: 'auto', height: 32, padding: '0 8px' }}
-        value={sort.field}
-        title="Ordenar por"
-        onChange={(event) => void setSort({ field: event.target.value as SortField, direction: sort.direction })}
-      >
-        {SORTS.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-
-      <button
-        type="button"
-        className="btn btn-icon"
-        title={sort.direction === 'asc' ? 'Ascendente' : 'Descendente'}
-        onClick={() => void setSort({ ...sort, direction: sort.direction === 'asc' ? 'desc' : 'asc' })}
-      >
-        {sort.direction === 'asc' ? '↑' : '↓'}
-      </button>
-
-      <div className="segmented">
-        {LAYOUTS.map((option) => (
-          <button
-            key={option.value}
-            type="button"
-            title={option.title}
-            aria-pressed={layout === option.value}
-            onClick={() => setLayout(option.value)}
+      {browsing && (
+        <>
+          <select
+            className="select"
+            style={{ width: 'auto', height: 32, padding: '0 8px' }}
+            value={sort.field}
+            title="Ordenar por"
+            onChange={(event) => void setSort({ field: event.target.value as SortField, direction: sort.direction })}
           >
-            {option.icon}
+            {SORTS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+
+          <button
+            type="button"
+            className="btn btn-icon"
+            title={sort.direction === 'asc' ? 'Ascendente' : 'Descendente'}
+            onClick={() => void setSort({ ...sort, direction: sort.direction === 'asc' ? 'desc' : 'asc' })}
+          >
+            {sort.direction === 'asc' ? '↑' : '↓'}
           </button>
-        ))}
-      </div>
+
+          <div className="segmented">
+            {LAYOUTS.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                title={option.title}
+                aria-pressed={layout === option.value}
+                onClick={() => setLayout(option.value)}
+              >
+                {option.icon}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
 
       <button type="button" className="btn btn-ghost btn-icon" title="Ajustes" onClick={onOpenSettings}>
         ⚙

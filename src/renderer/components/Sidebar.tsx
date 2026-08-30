@@ -111,6 +111,7 @@ export function Sidebar({ onManageFields, onManageTags, onNewCollection, onEditC
 
   const isActive = (candidate: string) => screen === 'library' && collectionId === null && query === candidate;
 
+
   const facetList = (items: FacetValue[], prefix: string, limit = 12) =>
     items.slice(0, limit).map((facet) => (
       <NavItem
@@ -136,7 +137,22 @@ export function Sidebar({ onManageFields, onManageTags, onNewCollection, onEditC
 
       <div className="sidebar-scroll">
         <div className="sidebar-section">
-          <NavItem icon="🏠" label="Toda la biblioteca" count={total} active={isActive('')} onClick={() => go('')} />
+          <NavItem
+            icon="🎬"
+            label="Inicio"
+            active={screen === 'home'}
+            onClick={() => {
+              setScreen('home');
+              onNavigate?.();
+            }}
+          />
+          <NavItem
+            icon="🗂"
+            label="Toda la biblioteca"
+            count={total}
+            active={screen === 'library' && isActive('')}
+            onClick={() => go('')}
+          />
           <NavItem
             icon="📊"
             label="Estadísticas"

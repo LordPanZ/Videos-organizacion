@@ -136,6 +136,19 @@ const SORT_EXPRESSIONS: Record<string, string> = {
 
 const DEFAULT_SORT: SortSpec = { field: 'addedAt', direction: 'desc' };
 
+/** Returned instead of counting facets when a caller does not need them. */
+const EMPTY_FACETS: Facets = {
+  platforms: [],
+  tags: [],
+  authors: [],
+  years: [],
+  ratings: [],
+  watchStatus: [],
+  durations: [],
+  availability: [],
+  customFields: {},
+};
+
 /** A compiled query: the SQL fragments plus their parameters, in bind order. */
 interface Scope {
   from: string;
@@ -261,7 +274,7 @@ export class VideoRepository {
     return {
       videos: this.hydrate(rows),
       total: Number(total?.n ?? 0),
-      facets: this.facets(scope),
+      facets: options.facets === false ? EMPTY_FACETS : this.facets(scope),
       warnings: scope.warnings,
     };
   }

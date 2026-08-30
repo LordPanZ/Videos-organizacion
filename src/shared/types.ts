@@ -258,6 +258,11 @@ export interface QueryOptions {
   /** Restrict to a manual collection (respects its stored ordering). */
   collectionId?: string;
   includeArchived?: boolean;
+  /**
+   * Skip facet counting. The home screen runs a query per row and never shows
+   * facets, so computing them would be pure waste.
+   */
+  facets?: boolean;
 }
 
 export interface FacetValue {

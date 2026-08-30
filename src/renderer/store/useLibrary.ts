@@ -27,7 +27,7 @@ const EMPTY_FACETS: Facets = {
   customFields: {},
 };
 
-export type Screen = 'library' | 'dashboard' | 'downloads' | 'duplicates';
+export type Screen = 'home' | 'library' | 'dashboard' | 'downloads' | 'duplicates';
 
 export interface Toast {
   id: number;
@@ -114,7 +114,8 @@ export const useLibrary = create<LibraryState>((set, get) => ({
   downloads: [],
   settings: DEFAULT_SETTINGS,
 
-  screen: 'library',
+  // The library opens on its front page, the way a streaming app does.
+  screen: 'home',
   query: '',
   sort: DEFAULT_SETTINGS.sort,
   layout: DEFAULT_SETTINGS.layout,

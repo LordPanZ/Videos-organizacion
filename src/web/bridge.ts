@@ -34,7 +34,12 @@ export function createWebBridge(library: WebLibrary) {
     for (const listener of listeners.get(event) ?? []) listener(payload);
   };
   const toast = (kind: 'info' | 'success' | 'error', message: string) => emit('toast', { kind, message });
-  const changed = (reason: string) => emit('library:changed', { reason });
+  // Every mutation ends here, so this is also where a write is made durable:
+  // awaiting it means the caller's change has actually reached IndexedDB.
+  const changed = async (reason: string) => {
+    emit('library:changed', { reason });
+    await library.flush();
+  };
 
   /* --------------------------------------------------------------- settings */
 
@@ -177,7 +182,7 @@ export function createWebBridge(library: WebLibrary) {
 
     importAbort = null;
     emit('import:done', report);
-    changed('import');
+    await changed('import');
     return report;
   };
 
@@ -245,42 +250,42 @@ export function createWebBridge(library: WebLibrary) {
       getMany: async (ids: string[]) => library.getMany(ids),
       update: async (id: string, patch: Partial<Video>) => {
         const updated = library.updateVideo(id, patch);
-        changed('video-update');
+        await changed('video-update');
         return updated;
       },
       updateMany: async (ids: string[], patch: Partial<Video>) => {
         const count = library.updateMany(ids, patch);
-        changed('video-update-many');
+        await changed('video-update-many');
         return count;
       },
       remove: async (ids: string[]) => {
         const count = library.removeVideos(ids);
-        changed('video-remove');
+        await changed('video-remove');
         return count;
       },
       setCustomField: async (ids: string[], key: string, value: Parameters<WebLibrary['setCustomField']>[2]) => {
         const count = library.setCustomField(ids, key, value);
-        changed('custom-field');
+        await changed('custom-field');
         return count;
       },
       setCover: async (videoId: string, dataUrl: string | null) => {
         const updated = library.setCover(videoId, dataUrl);
-        changed('cover');
+        await changed('cover');
         return updated;
       },
       setTags: async (videoId: string, tagIds: string[]) => {
         const updated = library.setTags(videoId, tagIds);
-        changed('tags');
+        await changed('tags');
         return updated;
       },
       addTags: async (videoIds: string[], tagIds: string[]) => {
         const count = library.addTags(videoIds, tagIds);
-        changed('tags');
+        await changed('tags');
         return count;
       },
       removeTags: async (videoIds: string[], tagIds: string[]) => {
         const count = library.removeTags(videoIds, tagIds);
-        changed('tags');
+        await changed('tags');
         return count;
       },
       open: async (id: string) => {
@@ -316,7 +321,7 @@ export function createWebBridge(library: WebLibrary) {
           }
           emit('refresh:progress', { done: index + 1, total: ids.length, title: video.title });
         }
-        changed('refresh');
+        await changed('refresh');
         toast('success', `${updated} vídeos actualizados${failed ? `, ${failed} sin datos` : ''}.`);
         return { updated, failed };
       },
@@ -350,20 +355,20 @@ export function createWebBridge(library: WebLibrary) {
       list: async () => library.listTags(),
       create: async (input: { name: string; color?: string | null; icon?: string | null; parentId?: string | null }) => {
         const tag = library.ensureTag(input);
-        changed('tags');
+        await changed('tags');
         return tag;
       },
       update: async (id: string, patch: Partial<Tag>) => {
         library.updateTag(id, patch);
-        changed('tags');
+        await changed('tags');
       },
       remove: async (id: string) => {
         library.removeTag(id);
-        changed('tags');
+        await changed('tags');
       },
       merge: async (sourceIds: string[], targetId: string) => {
         const count = library.mergeTags(sourceIds, targetId);
-        changed('tags');
+        await changed('tags');
         return count;
       },
       unused: async () => library.unusedTags(),
@@ -373,7 +378,7 @@ export function createWebBridge(library: WebLibrary) {
           const video = library.getVideo(id);
           if (video) tagsAdded += autoTag(video).length;
         }
-        changed('auto-tag');
+        await changed('auto-tag');
         toast('success', `${tagsAdded} etiquetas aplicadas a ${videoIds.length} vídeos.`);
         return { processed: videoIds.length, tagsAdded };
       },
@@ -383,7 +388,7 @@ export function createWebBridge(library: WebLibrary) {
       list: async () => library.listAuthors(),
       update: async (id: string, patch: Parameters<WebLibrary['updateAuthor']>[1]) => {
         library.updateAuthor(id, patch);
-        changed('authors');
+        await changed('authors');
       },
     },
 
@@ -391,30 +396,30 @@ export function createWebBridge(library: WebLibrary) {
       list: async () => library.listCollections(),
       create: async (input: Parameters<WebLibrary['createCollection']>[0]) => {
         const collection = library.createCollection(input);
-        changed('collections');
+        await changed('collections');
         return collection;
       },
       update: async (id: string, patch: Parameters<WebLibrary['updateCollection']>[1]) => {
         library.updateCollection(id, patch);
-        changed('collections');
+        await changed('collections');
       },
       remove: async (id: string) => {
         library.removeCollection(id);
-        changed('collections');
+        await changed('collections');
       },
       addVideos: async (id: string, videoIds: string[]) => {
         const added = library.addToCollection(id, videoIds);
-        changed('collections');
+        await changed('collections');
         return added;
       },
       removeVideos: async (id: string, videoIds: string[]) => {
         const removed = library.removeFromCollection(id, videoIds);
-        changed('collections');
+        await changed('collections');
         return removed;
       },
       reorder: async (id: string, videoIds: string[]) => {
         library.reorderCollection(id, videoIds);
-        changed('collections');
+        await changed('collections');
       },
       forVideo: async (videoId: string) => library.collectionsForVideo(videoId),
     },
@@ -423,16 +428,16 @@ export function createWebBridge(library: WebLibrary) {
       list: async () => library.listFields(),
       create: async (input: Parameters<WebLibrary['createField']>[0]) => {
         const field = library.createField(input);
-        changed('fields');
+        await changed('fields');
         return field;
       },
       update: async (id: string, patch: Parameters<WebLibrary['updateField']>[1]) => {
         library.updateField(id, patch);
-        changed('fields');
+        await changed('fields');
       },
       remove: async (id: string) => {
         library.removeField(id);
-        changed('fields');
+        await changed('fields');
       },
       values: async (key: string) => library.fieldValues(key),
     },
@@ -449,16 +454,16 @@ export function createWebBridge(library: WebLibrary) {
       list: async () => library.listRules(),
       create: async (input: Parameters<WebLibrary['createRule']>[0]) => {
         const rule = library.createRule(input);
-        changed('rules');
+        await changed('rules');
         return rule;
       },
       update: async (id: string, patch: Parameters<WebLibrary['updateRule']>[1]) => {
         library.updateRule(id, patch);
-        changed('rules');
+        await changed('rules');
       },
       remove: async (id: string) => {
         library.removeRule(id);
-        changed('rules');
+        await changed('rules');
       },
       run: async () => {
         const ids = library.searchIds({});
@@ -467,7 +472,7 @@ export function createWebBridge(library: WebLibrary) {
           const video = library.getVideo(id);
           if (video) tagsAdded += autoTag(video).length;
         }
-        changed('rules-run');
+        await changed('rules-run');
         return { processed: ids.length, tagsAdded };
       },
     },
@@ -476,16 +481,16 @@ export function createWebBridge(library: WebLibrary) {
       list: async () => library.listViews(),
       create: async (view: Parameters<WebLibrary['createView']>[0]) => {
         const created = library.createView(view);
-        changed('views');
+        await changed('views');
         return created;
       },
       update: async (id: string, patch: Parameters<WebLibrary['updateView']>[1]) => {
         library.updateView(id, patch);
-        changed('views');
+        await changed('views');
       },
       remove: async (id: string) => {
         library.removeView(id);
-        changed('views');
+        await changed('views');
       },
     },
 
@@ -541,7 +546,7 @@ export function createWebBridge(library: WebLibrary) {
         const text = await readFile('application/json,.json');
         if (!text) return null;
         const result = library.importAll(JSON.parse(text) as Record<string, unknown>);
-        changed('library-import');
+        await changed('library-import');
         toast('success', `Importados ${result.videos} vídeos y ${result.tags} etiquetas.`);
         return result;
       },

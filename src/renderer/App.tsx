@@ -4,6 +4,7 @@ import { subscribeToMain, useLibrary } from './store/useLibrary.ts';
 import { Sidebar } from './components/Sidebar.tsx';
 import { Toolbar } from './components/Toolbar.tsx';
 import { LibraryView } from './components/LibraryView.tsx';
+import { HomeView } from './components/HomeView.tsx';
 import { DetailPanel } from './components/DetailPanel.tsx';
 import { Dashboard } from './components/Dashboard.tsx';
 import { DownloadsPanel } from './components/DownloadsPanel.tsx';
@@ -214,6 +215,7 @@ export function App() {
       },
       { id: 'fields', icon: '🧩', label: 'Gestionar campos personalizados', group: 'Organización', run: () => setDialog({ kind: 'fields' }) },
       { id: 'collection', icon: '📁', label: 'Nueva colección', group: 'Organización', run: () => setDialog({ kind: 'collection', id: null }) },
+      { id: 'home', icon: '🎬', label: 'Ir a Inicio', shortcut: '⌘H', group: 'Navegación', run: () => setScreen('home') },
       { id: 'dashboard', icon: '📊', label: 'Ver estadísticas', shortcut: '⌘D', group: 'Navegación', run: () => setScreen('dashboard') },
       { id: 'downloads', icon: '⬇', label: 'Ver descargas', shortcut: '⌘J', group: 'Navegación', run: () => setScreen('downloads') },
       { id: 'duplicates', icon: '🔁', label: 'Buscar duplicados', group: 'Navegación', run: () => setScreen('duplicates') },
@@ -319,6 +321,11 @@ export function App() {
         setLayout((['grid', 'masonry', 'list', 'table'] as LayoutMode[])[Number(event.key) - 1]);
         return;
       }
+      if (mod && event.key.toLowerCase() === 'h') {
+        event.preventDefault();
+        setScreen('home');
+        return;
+      }
       if (mod && event.key.toLowerCase() === 'd') {
         event.preventDefault();
         setScreen('dashboard');
@@ -406,6 +413,7 @@ export function App() {
       <div className="main">
         <Toolbar
           searchRef={searchRef}
+          browsing={screen === 'library'}
           onAdd={() => setDialog({ kind: 'add' })}
           onOpenHelp={() => setDialog({ kind: 'help' })}
           onOpenSettings={() => setDialog({ kind: 'settings' })}
@@ -422,6 +430,7 @@ export function App() {
 
         <div className="content" style={{ position: 'relative' }}>
           <div className="content-scroll">
+            {screen === 'home' && <HomeView onAdd={() => setDialog({ kind: 'add' })} />}
             {screen === 'library' && <LibraryView onAdd={() => setDialog({ kind: 'add' })} />}
             {screen === 'dashboard' && <Dashboard />}
             {screen === 'downloads' && <DownloadsPanel />}

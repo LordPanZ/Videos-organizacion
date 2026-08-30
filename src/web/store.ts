@@ -42,6 +42,19 @@ const AVAILABILITY_LABELS: Record<string, string> = {
 
 const DEFAULT_SORT: SortSpec = { field: 'addedAt', direction: 'desc' };
 
+/** Returned instead of counting facets when a caller does not need them. */
+const EMPTY_FACETS: Facets = {
+  platforms: [],
+  tags: [],
+  authors: [],
+  years: [],
+  ratings: [],
+  watchStatus: [],
+  durations: [],
+  availability: [],
+  customFields: {},
+};
+
 /** Decodes a `data:` URL into a Blob without a network round trip. */
 function dataUrlToBlob(dataUrl: string): Blob {
   const [header, payload] = dataUrl.split(',', 2);
@@ -85,6 +98,7 @@ export class WebLibrary {
    */
   private covers = new Map<string, Blob>();
   private coverUrls = new Map<string, string>();
+  private writes = new Set<Promise<void>>();
 
   async open(): Promise<void> {
     this.db = await openDb();
@@ -118,13 +132,28 @@ export class WebLibrary {
   /* ------------------------------------------------------------ persistence */
 
   private persist(store: StoreName, records: unknown[]): void {
-    // Writes are fire-and-forget: the in-memory copy is the source of truth for
-    // the running session, and a failed write must not block the interface.
-    void putMany(this.db, store, records).catch((error) => console.error('[videoteca] guardado', store, error));
+    this.track(putMany(this.db, store, records), 'guardado', store);
   }
 
   private forget(store: StoreName, ids: string[]): void {
-    void deleteMany(this.db, store, ids).catch((error) => console.error('[videoteca] borrado', store, error));
+    this.track(deleteMany(this.db, store, ids), 'borrado', store);
+  }
+
+  /**
+   * Writes never block the interface — the in-memory copy answers reads — but
+   * they are kept in flight here so `flush()` can wait for them. Without that,
+   * closing or reloading the tab right after an edit aborts the pending
+   * transaction and the edit is silently lost.
+   */
+  private track(write: Promise<void>, action: string, store: StoreName): void {
+    const pending = write.catch((error) => console.error('[videoteca]', action, store, error));
+    this.writes.add(pending);
+    void pending.finally(() => this.writes.delete(pending));
+  }
+
+  /** Resolves once every write issued so far has reached IndexedDB. */
+  async flush(): Promise<void> {
+    while (this.writes.size > 0) await Promise.all([...this.writes]);
   }
 
   private touch(record: VideoRecord): void {
@@ -361,7 +390,7 @@ export class WebLibrary {
     return {
       videos: page.map((record) => this.hydrate(record)),
       total: sorted.length,
-      facets: this.facets(matched),
+      facets: options.facets === false ? EMPTY_FACETS : this.facets(matched),
       // The same warning can fire once per video; show each only once.
       warnings: [...new Set(warnings)],
     };
@@ -1279,6 +1308,7 @@ export class WebLibrary {
       ['Cocina', '#ff9f43', '🍳'],
       ['Deporte', '#26de81', '🏃'],
       ['Tecnología', '#45aaf2', '💻'],
+      ['Inteligencia artificial', '#7c5cff', '🤖'],
       ['Humor', '#fed330', '😂'],
       ['Viajes', '#2bcbba', '✈️'],
       ['Noticias', '#fc5c65', '📰'],

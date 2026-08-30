@@ -399,3 +399,98 @@
     font-size: 14px;
   }
 }
+
+/* ------------------------------------------------------------------- home */
+
+@media (max-width: 860px) {
+  .hero {
+    min-height: 44vh;
+    padding: 24px 16px 20px;
+  }
+
+  .hero-body {
+    gap: 9px;
+  }
+
+  .hero-title {
+    font-size: clamp(24px, 8vw, 34px);
+  }
+
+  /* Three lines of description is a lot of a phone screen for something the
+     detail sheet shows in full. */
+  .hero-description {
+    -webkit-line-clamp: 2;
+    font-size: 13px;
+  }
+
+  .hero-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .hero-play,
+  .hero-more {
+    height: 44px;
+    padding: 0 12px;
+    font-size: 14px;
+  }
+
+  .shelves {
+    gap: 26px;
+    margin-top: -8px;
+  }
+
+  .shelf-head {
+    padding: 0 16px;
+    margin-bottom: 9px;
+  }
+
+  .shelf-head h2 {
+    font-size: 15.5px;
+  }
+
+  .shelf-track {
+    padding: 4px 16px 6px;
+    gap: 10px;
+    /* A phone scrolls these with a thumb, so let the swipe settle where it
+       lands rather than snapping it back. */
+    scroll-snap-type: none;
+  }
+
+  /* Arrows are a pointer affordance; a touch screen swipes instead. */
+  .shelf-arrow {
+    display: none;
+  }
+
+  .poster {
+    width: 168px;
+  }
+
+  .poster:hover .poster-art {
+    transform: none;
+    box-shadow: none;
+  }
+
+  /* No hover on a phone, so the button stays out — but in the corner, where it
+     does not sit on top of the monogram or the duration. */
+  .poster-play {
+    inset: auto auto 7px 7px;
+    margin: 0;
+    opacity: 1;
+    width: 30px;
+    height: 30px;
+    font-size: 12px;
+    background: rgba(255, 255, 255, 0.86);
+  }
+
+  .home {
+    padding-bottom: calc(48px + var(--safe-bottom));
+  }
+}
+
+@media (max-width: 420px) {
+  .poster {
+    width: 148px;
+  }
+}
