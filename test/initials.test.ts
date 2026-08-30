@@ -1,6 +1,6 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { initialsFor } from '../src/renderer/covers.ts';
+import { initialsFor } from '../src/shared/initials.ts';
 
 describe('initialsFor', () => {
   test('takes the first letter of the first two words', () => {

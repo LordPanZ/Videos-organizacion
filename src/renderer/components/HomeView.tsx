@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api, thumbnailSrc } from '../api.ts';
 import { useLibrary } from '../store/useLibrary.ts';
-import { generatedCover, initialsFor } from '../covers.ts';
+import { generatedCover } from '../covers.ts';
+import { initialsFor } from '../../shared/initials.ts';
 import { formatDate, formatDuration } from '../../shared/query/values.ts';
 import { PLATFORM_COLORS, PLATFORM_LABELS, type Video } from '../../shared/types.ts';
 
