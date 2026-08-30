@@ -604,7 +604,10 @@ a {
   flex-shrink: 0;
 }
 
-.card[data-short='true'] .card-thumb {
+/* Only the masonry layout gives short-form video its taller frame. In the
+   uniform grid every thumbnail stays 16:9, otherwise one vertical card
+   stretches its whole row and leaves the neighbours half empty. */
+.video-grid[data-layout='masonry'] .card[data-short='true'] .card-thumb {
   aspect-ratio: 3 / 4;
 }
 
@@ -1308,6 +1311,9 @@ a {
 }
 .spark div {
   flex: 1;
+  /* Without a cap, a library spanning a single month renders one bar across
+     the full width, which reads as a broken block rather than a chart. */
+  max-width: 52px;
   background: var(--accent);
   border-radius: 3px 3px 0 0;
   min-height: 2px;

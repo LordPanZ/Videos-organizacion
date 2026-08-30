@@ -71,7 +71,7 @@ function createWindow(active: AppContext): BrowserWindow {
     backgroundColor: active.settings.theme === 'light' ? '#f6f7f9' : '#0f1115',
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
     webPreferences: {
-      preload: path.join(BUNDLE_DIR, 'preload.js'),
+      preload: path.join(BUNDLE_DIR, 'preload.cjs'),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,

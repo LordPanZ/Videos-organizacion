@@ -148,6 +148,7 @@ export function LibraryView({ onAdd }: LibraryViewProps) {
     <div className="grid-wrap">
       <div
         className="video-grid"
+        data-layout={layout}
         style={
           {
             '--card-size': `${cardSize}px`,
