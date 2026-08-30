@@ -126,7 +126,9 @@ export const useLibrary = create<LibraryState>((set, get) => ({
   loading: true,
   page: 0,
   hasMore: false,
-  sidebarVisible: true,
+  // On a phone the sidebar is a drawer, so it starts closed; on a wide screen
+  // it is a permanent column.
+  sidebarVisible: typeof window === 'undefined' ? true : window.innerWidth > 860,
   toasts: [],
   importState: { active: false, done: 0, total: 0, added: 0, duplicates: 0, failed: 0, current: '' },
 

@@ -71,6 +71,8 @@ export interface SidebarProps {
   onManageTags(): void;
   onNewCollection(): void;
   onEditCollection(id: string): void;
+  /** Called after any navigation, so a narrow layout can close the drawer. */
+  onNavigate?(): void;
 }
 
 /**
@@ -80,7 +82,7 @@ export interface SidebarProps {
  * state, so what the user sees in the grid always matches what the search box
  * says — and any filter reached by clicking can also be typed.
  */
-export function Sidebar({ onManageFields, onManageTags, onNewCollection, onEditCollection }: SidebarProps) {
+export function Sidebar({ onManageFields, onManageTags, onNewCollection, onEditCollection, onNavigate }: SidebarProps) {
   const {
     query,
     facets,
@@ -94,6 +96,7 @@ export function Sidebar({ onManageFields, onManageTags, onNewCollection, onEditC
     runQuery,
     setCollection,
     setScreen,
+    toggleSidebar,
   } = useLibrary();
 
   const tagTree = useMemo(() => buildTagTree(tags), [tags]);
@@ -103,6 +106,7 @@ export function Sidebar({ onManageFields, onManageTags, onNewCollection, onEditC
     void setCollection(null);
     void runQuery(nextQuery);
     setScreen('library');
+    onNavigate?.();
   };
 
   const isActive = (candidate: string) => screen === 'library' && collectionId === null && query === candidate;
@@ -125,14 +129,41 @@ export function Sidebar({ onManageFields, onManageTags, onNewCollection, onEditC
       <div className="sidebar-brand">
         <span className="logo">🎬</span>
         Videoteca
+        <button type="button" className="sidebar-close" title="Cerrar el menú" onClick={toggleSidebar}>
+          ✕
+        </button>
       </div>
 
       <div className="sidebar-scroll">
         <div className="sidebar-section">
           <NavItem icon="🏠" label="Toda la biblioteca" count={total} active={isActive('')} onClick={() => go('')} />
-          <NavItem icon="📊" label="Estadísticas" active={screen === 'dashboard'} onClick={() => setScreen('dashboard')} />
-          <NavItem icon="⬇" label="Descargas" active={screen === 'downloads'} onClick={() => setScreen('downloads')} />
-          <NavItem icon="🔁" label="Duplicados" active={screen === 'duplicates'} onClick={() => setScreen('duplicates')} />
+          <NavItem
+            icon="📊"
+            label="Estadísticas"
+            active={screen === 'dashboard'}
+            onClick={() => {
+              setScreen('dashboard');
+              onNavigate?.();
+            }}
+          />
+          <NavItem
+            icon="⬇"
+            label="Descargas"
+            active={screen === 'downloads'}
+            onClick={() => {
+              setScreen('downloads');
+              onNavigate?.();
+            }}
+          />
+          <NavItem
+            icon="🔁"
+            label="Duplicados"
+            active={screen === 'duplicates'}
+            onClick={() => {
+              setScreen('duplicates');
+              onNavigate?.();
+            }}
+          />
         </div>
 
         {views.length > 0 && (
@@ -163,6 +194,7 @@ export function Sidebar({ onManageFields, onManageTags, onNewCollection, onEditC
                 else {
                   void setCollection(collection.id);
                   setScreen('library');
+                  onNavigate?.();
                 }
               }}
               onContextMenu={(event) => {

@@ -172,11 +172,18 @@ export function App() {
     runQuery,
     refresh,
     settings,
+    toggleSidebar,
   } = store;
 
   const [dialog, setDialog] = useState<Dialog>({ kind: 'none' });
   const searchRef = useRef<HTMLInputElement>(null);
   const closeDialog = useCallback(() => setDialog({ kind: 'none' }), []);
+
+  // Where the sidebar is a drawer, choosing something should get it out of the
+  // way; where it is a permanent column, it must stay put.
+  const closeDrawerOnNarrowScreens = useCallback(() => {
+    if (window.innerWidth <= 860) useLibrary.setState({ sidebarVisible: false });
+  }, []);
 
   useEffect(() => {
     void bootstrap();
@@ -383,12 +390,17 @@ export function App() {
   return (
     <div className="app" data-sidebar={sidebarVisible ? 'visible' : 'hidden'}>
       {sidebarVisible && (
-        <Sidebar
-          onManageFields={() => setDialog({ kind: 'fields' })}
-          onManageTags={() => setDialog({ kind: 'fields' })}
-          onNewCollection={() => setDialog({ kind: 'collection', id: null })}
-          onEditCollection={(id) => setDialog({ kind: 'collection', id })}
-        />
+        <>
+          <Sidebar
+            onManageFields={() => setDialog({ kind: 'fields' })}
+            onManageTags={() => setDialog({ kind: 'fields' })}
+            onNewCollection={() => setDialog({ kind: 'collection', id: null })}
+            onEditCollection={(id) => setDialog({ kind: 'collection', id })}
+            onNavigate={closeDrawerOnNarrowScreens}
+          />
+          {/* Only rendered as a real overlay below the drawer breakpoint. */}
+          <button type="button" className="drawer-backdrop" aria-label="Cerrar el menú" onClick={toggleSidebar} />
+        </>
       )}
 
       <div className="main">

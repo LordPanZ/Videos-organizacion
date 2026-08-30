@@ -1,7 +1,29 @@
 # 🎬 Videoteca
 
 **Tu biblioteca personal de vídeos de YouTube, TikTok, Instagram, Vimeo y +1000 plataformas.**
-Aplicación de escritorio para Windows, macOS y Linux. Todo local, sin cuentas, sin nube, sin telemetría.
+Disponible en dos formas: una **app web instalable** para el móvil y una **aplicación de escritorio**
+para Windows, macOS y Linux. Todo local, sin cuentas, sin nube, sin telemetría.
+
+## 📱 En el móvil
+
+**https://lordpanz.github.io/Videos-organizacion/**
+
+Se abre en el navegador y se instala en la pantalla de inicio como cualquier otra app:
+
+- **Android (Chrome)**: menú ⋮ → *Añadir a la pantalla de inicio*
+- **iPhone (Safari)**: botón compartir → *Añadir a pantalla de inicio*
+
+A partir de ahí se abre a pantalla completa, sin barra del navegador, y **funciona sin conexión**.
+La biblioteca se guarda en el propio teléfono; nada se envía a ningún servidor.
+
+Lo único que la versión web no puede hacer es **descargar los vídeos**: eso necesita un programa
+externo que solo puede ejecutarse en un ordenador. Todo lo demás —catalogar, etiquetar, buscar,
+organizar— funciona igual.
+
+## 💻 En el ordenador
+
+Instaladores para Windows, macOS y Linux en la
+[página de versiones](https://github.com/LordPanZ/Videos-organizacion/releases).
 
 ---
 
@@ -166,21 +188,35 @@ plataformas de origen.
 | Capa | Tecnología |
 |---|---|
 | Escritorio | Electron 43 con aislamiento de contexto y sin integración de Node en la interfaz |
-| Interfaz | React 19 + TypeScript, con Zustand para el estado |
-| Datos | SQLite mediante better-sqlite3, en modo WAL, con índice FTS5 |
-| Empaquetado | Vite para la interfaz, esbuild para el proceso principal, electron-builder para los instaladores |
-| Metadatos | Cadena de proveedores: yt-dlp → oEmbed → Open Graph → la propia URL |
+| Móvil / web | App web instalable (PWA) con service worker para uso sin conexión |
+| Interfaz | React 19 + TypeScript, con Zustand para el estado — **la misma en ambas versiones** |
+| Datos (escritorio) | SQLite mediante better-sqlite3, en modo WAL, con índice FTS5 |
+| Datos (móvil) | IndexedDB, con la biblioteca en memoria y escritura continua |
+| Empaquetado | Vite, esbuild para el proceso principal, electron-builder para los instaladores |
+| Metadatos | Escritorio: yt-dlp → oEmbed → Open Graph → URL. Móvil: oEmbed → URL |
 
 ```
 electron/          proceso principal, precarga, IPC, menú
 src/core/          lógica de dominio (base de datos, metadatos, servicios) — sin Electron
-src/shared/        tipos y lenguaje de consulta compartidos entre procesos
-src/renderer/      interfaz React
+src/shared/        tipos y lenguaje de consulta compartidos por todas las versiones
+src/renderer/      interfaz React, común a escritorio y móvil
+src/web/           almacén IndexedDB, motor de búsqueda en memoria y puente del navegador
 test/              118 pruebas
 ```
 
 El `src/core` no importa Electron en ningún punto: por eso puede probarse con Node a secas, y por eso
 las 118 pruebas se ejecutan en menos de un segundo.
+
+### Una misma interfaz en dos mundos
+
+La interfaz nunca habla con la base de datos: siempre llama a `window.videoteca`. En el escritorio ese
+objeto lo instala el *preload* de Electron; en el navegador lo instala `src/web/bridge.ts`. Como ambos
+implementan el mismo contrato, **los componentes de React son literalmente los mismos** en las dos
+versiones, sin condicionales por plataforma repartidos por el código.
+
+El lenguaje de búsqueda se comparte igual: el analizador vive en `src/shared/query/`, y solo cambia
+qué hace con el resultado —el escritorio lo compila a SQL, el móvil lo evalúa en memoria— con
+semánticas deliberadamente idénticas, para que la misma consulta dé el mismo resultado en ambos.
 
 ### Decisiones que quizá te interesen
 
@@ -201,10 +237,12 @@ las 118 pruebas se ejecutan en menos de un segundo.
 ## Comandos
 
 ```bash
-npm run dev          # desarrollo con recarga en caliente
+npm run dev          # escritorio, con recarga en caliente
+npm run dev:web      # app web, con recarga en caliente
 npm test             # 118 pruebas
 npm run typecheck    # TypeScript en modo estricto, interfaz y Node
-npm run build        # compila todo a dist/
+npm run build        # compila la app de escritorio a dist/
+npm run build:web    # compila la app web a dist/web/
 npm run dist         # instaladores para la plataforma actual
 ```
 

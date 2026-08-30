@@ -23,5 +23,5 @@
       "@renderer/*": ["src/renderer/*"]
     }
   },
-  "include": ["src/renderer", "src/shared", "vite.config.ts"]
+  "include": ["src/renderer", "src/web", "src/shared", "vite.config.ts", "vite.web.config.ts"]
 }
