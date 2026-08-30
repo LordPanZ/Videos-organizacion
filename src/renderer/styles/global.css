@@ -1013,6 +1013,49 @@ a {
   user-select: text;
 }
 
+/* The title is a control as well as a heading, so it carries a quiet pencil
+   rather than waiting for a hover the phone cannot give it. */
+.detail-title.editable {
+  cursor: text;
+  border-radius: var(--radius-sm);
+  padding: 3px 6px;
+  margin: -3px -6px 3px;
+  transition: background 0.15s var(--ease);
+}
+
+.detail-title.editable:hover {
+  background: var(--surface);
+}
+
+.edit-hint {
+  margin-left: 7px;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-muted);
+  opacity: 0.55;
+  vertical-align: 2px;
+}
+
+.detail-title.editable:hover .edit-hint {
+  opacity: 1;
+  color: var(--accent);
+}
+
+.title-input {
+  display: block;
+  width: 100%;
+  resize: none;
+  overflow: hidden;
+  padding: 3px 6px;
+  margin: -3px -6px 3px;
+  font-family: inherit;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  outline: none;
+}
+
 .meta-grid {
   display: grid;
   grid-template-columns: auto 1fr;

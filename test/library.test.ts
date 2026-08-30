@@ -58,6 +58,19 @@ describe('videos', () => {
     assert.equal(loaded.viewCount, 1500);
   });
 
+  test('renaming a video makes it findable under the new name', () => {
+    // Instagram and friends hand over no metadata, so a video arrives named
+    // after its id and the user renames it. Search has to follow.
+    const video = addVideo({ title: 'Instagram · AaBbCcDdEe1', platform: 'instagram' });
+    assert.equal(count('masa madre'), 0);
+
+    library.videos.update(video.id, { title: 'Receta de pan de masa madre' });
+
+    assert.equal(library.videos.getById(video.id)!.title, 'Receta de pan de masa madre');
+    assert.equal(count('masa madre'), 1);
+    assert.equal(count('AaBbCcDdEe1'), 0);
+  });
+
   test('duplicate URLs are rejected by the unique index', () => {
     addVideo({ url: 'https://www.youtube.com/watch?v=abc11111111' });
     assert.throws(() => addVideo({ url: 'https://www.youtube.com/watch?v=abc11111111' }));

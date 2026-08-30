@@ -123,6 +123,9 @@ mensaje concreto en lugar de devolver cero resultados en silencio.
 - **Vistas guardadas** en el panel lateral (ocho vienen ya hechas).
 - **Panel lateral con facetas** y recuentos en vivo: plataformas, etiquetas, creadores, campos
   personalizados, duración y años.
+- **Título editable**: pulsa sobre el nombre de un vídeo y escribe otro. Instagram y otras
+  plataformas no entregan sus datos, así que llegan con un nombre provisional; una vez renombrado,
+  el buscador lo encuentra por el nombre nuevo.
 - **Marcadores con marca de tiempo** dentro de cada vídeo, y notas libres.
 - **Edición en bloque**: etiquetar, valorar, asignar campos, mover a colecciones o descargar cientos
   de vídeos de una vez.

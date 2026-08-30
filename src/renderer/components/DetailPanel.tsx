@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { api, mediaUrl, thumbnailSrc } from '../api.ts';
 import { useLibrary } from '../store/useLibrary.ts';
 import { embedUrl, parseVideoUrl } from '../../core/platforms/detect.ts';
@@ -23,6 +23,85 @@ function Stars({ value, onChange }: { value: number; onChange(next: number): voi
         </button>
       ))}
     </span>
+  );
+}
+
+/** Keeps the box exactly as tall as the text inside it. */
+function grow(node: HTMLTextAreaElement): void {
+  node.style.height = 'auto';
+  node.style.height = `${node.scrollHeight}px`;
+}
+
+/**
+ * The title doubles as its own editor.
+ *
+ * Instagram — and any platform that will not hand over its metadata — leaves a
+ * video named after its id, which says nothing about what is in it. Renaming
+ * has to be one tap away, right where the name is shown.
+ */
+function EditableTitle({ value, onSave }: { value: string; onSave(next: string): void }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+  const field = useRef<HTMLTextAreaElement | null>(null);
+
+  // A different video, or a rename made elsewhere, replaces what is shown.
+  useEffect(() => {
+    if (!editing) setDraft(value);
+  }, [value, editing]);
+
+  useEffect(() => {
+    const node = field.current;
+    if (!editing || !node) return;
+    node.focus();
+    node.select();
+    grow(node);
+  }, [editing]);
+
+  const commit = () => {
+    setEditing(false);
+    const next = draft.trim();
+    // An empty name would leave the video unidentifiable, so it stays as it was.
+    if (!next || next === value) {
+      setDraft(value);
+      return;
+    }
+    onSave(next);
+  };
+
+  if (!editing) {
+    return (
+      <h2 className="detail-title editable" title="Pulsa para cambiar el título" onClick={() => setEditing(true)}>
+        {value}
+        <span className="edit-hint" aria-hidden="true">
+          ✎
+        </span>
+      </h2>
+    );
+  }
+
+  return (
+    <textarea
+      ref={field}
+      className="detail-title title-input"
+      value={draft}
+      rows={1}
+      aria-label="Título del vídeo"
+      onChange={(event) => {
+        setDraft(event.target.value);
+        grow(event.target);
+      }}
+      onBlur={commit}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          commit();
+        }
+        if (event.key === 'Escape') {
+          setDraft(value);
+          setEditing(false);
+        }
+      }}
+    />
   );
 }
 
@@ -204,7 +283,7 @@ export function DetailPanel({ videoId, onClose }: DetailPanelProps) {
       <div className="detail-scroll">
         <Player video={video} />
 
-        <h2 className="detail-title">{video.title}</h2>
+        <EditableTitle value={video.title} onSave={(title) => void update({ title })} />
 
         {video.author && (
           <p className="muted" style={{ margin: '0 0 10px', fontSize: 13 }}>
