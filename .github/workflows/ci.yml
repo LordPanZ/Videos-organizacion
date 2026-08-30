@@ -3,7 +3,14 @@ name: CI
 on:
   push:
     branches: ['**']
+    tags: ['v*']
   pull_request:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: 'Build the installers for Windows, macOS and Linux'
+        type: boolean
+        default: true
 
 jobs:
   verify:
@@ -11,53 +18,75 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
 
       - run: npm ci
-
       - name: Typecheck (renderer and Node)
         run: npm run typecheck
-
       - name: Test
         run: npm test
-
       - name: Build
         run: npm run build
 
   package:
-    name: Package installers
-    # Only build installers for tagged releases; a full matrix on every push
-    # would spend twenty minutes to produce artefacts nobody downloads.
-    if: startsWith(github.ref, 'refs/tags/v')
+    name: Installer (${{ matrix.label }})
+    # Installers are built for tags and for a manual run; a full three-OS
+    # matrix on every push would spend twenty minutes producing artefacts
+    # nobody downloads.
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     needs: verify
+    permissions:
+      contents: write
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: windows-latest
+            label: Windows
+            command: npm run dist:win
+          - os: macos-latest
+            label: macOS
+            command: npm run dist:mac
+          - os: ubuntu-latest
+            label: Linux
+            command: npm run dist:linux
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
 
       - run: npm ci
-      - run: npm run dist
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build installer
+        run: ${{ matrix.command }}
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload as workflow artifact
+        uses: actions/upload-artifact@v4
         with:
-          name: videoteca-${{ matrix.os }}
+          name: videoteca-${{ matrix.label }}
           path: |
             release/**/*.exe
             release/**/*.dmg
             release/**/*.AppImage
             release/**/*.deb
-          if-no-files-found: ignore
+          if-no-files-found: warn
+
+      # On a tag, also attach the installers to a public release so they can be
+      # downloaded without a GitHub account.
+      - name: Attach to release
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          # The first matrix job to finish creates the release; the rest attach to it.
+          gh release view "$tag" >/dev/null 2>&1 || \
+            gh release create "$tag" --title "Videoteca $tag" --notes "Instaladores de Videoteca $tag."
+          find release -type f \( -name '*.exe' -o -name '*.dmg' -o -name '*.AppImage' -o -name '*.deb' \) \
+            -exec gh release upload "$tag" {} --clobber \;
