@@ -31,6 +31,11 @@ win:
   icon: resources/icon.png
   artifactName: ${productName}-${version}-${arch}-setup.${ext}
 
+# The portable build needs its own name: it shares the .exe extension with the
+# NSIS installer and would otherwise overwrite it.
+portable:
+  artifactName: ${productName}-${version}-${arch}-portable.${ext}
+
 nsis:
   oneClick: false
   perMachine: false
