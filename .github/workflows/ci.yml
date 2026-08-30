@@ -108,5 +108,10 @@ jobs:
             sleep 5
           done
 
-          find release -type f \( -name '*.exe' -o -name '*.dmg' -o -name '*.AppImage' -o -name '*.deb' \) \
+          # Only the installers sit directly in release/<version>/. Without the
+          # depth limit this also sweeps up the unpacked app directories, which
+          # contain internal binaries (Videoteca.exe, elevate.exe) that are not
+          # distributable on their own and only confuse whoever downloads them.
+          find release -mindepth 2 -maxdepth 2 -type f \
+            \( -name '*.exe' -o -name '*.dmg' -o -name '*.AppImage' -o -name '*.deb' \) \
             -print -exec gh release upload "$tag" {} --clobber \;
