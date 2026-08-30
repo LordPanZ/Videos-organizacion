@@ -1,0 +1,63 @@
+appId: com.lordpanz.videoteca
+productName: Videoteca
+copyright: Copyright © 2026 LordPanZ
+
+directories:
+  output: release/${version}
+  buildResources: resources
+
+files:
+  - dist/**/*
+  - package.json
+  - '!**/*.map'
+
+# better-sqlite3 is a native module: keep it unpacked so the .node binary is
+# loadable from inside the asar archive.
+asarUnpack:
+  - '**/node_modules/better-sqlite3/**'
+
+# better-sqlite3 v13 ships N-API prebuilds for every target, so electron-builder
+# does not need to rebuild it against Electron's ABI.
+npmRebuild: false
+electronDownload:
+  cache: .electron-cache
+
+win:
+  target:
+    - target: nsis
+      arch: [x64, arm64]
+    - target: portable
+      arch: [x64]
+  icon: resources/icon.png
+  artifactName: ${productName}-${version}-${arch}-setup.${ext}
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Videoteca
+
+mac:
+  target:
+    - target: dmg
+      arch: [x64, arm64]
+  icon: resources/icon.png
+  category: public.app-category.video
+  darkModeSupport: true
+  hardenedRuntime: true
+  entitlements: resources/entitlements.mac.plist
+  entitlementsInherit: resources/entitlements.mac.plist
+  artifactName: ${productName}-${version}-${arch}.${ext}
+
+linux:
+  target:
+    - target: AppImage
+      arch: [x64, arm64]
+    - target: deb
+      arch: [x64]
+  icon: resources/icon.png
+  category: AudioVideo
+  maintainer: LordPanZ <urkocasas@gmail.com>
+  artifactName: ${productName}-${version}-${arch}.${ext}
