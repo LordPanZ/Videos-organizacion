@@ -21,6 +21,7 @@
     "build:renderer": "vite build",
     "build:main": "node scripts/build-main.mjs",
     "build:web": "vite build --config vite.web.config.ts",
+    "build:single": "vite build --config vite.single.config.ts && node scripts/build-single.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json",
     "test": "node --test --experimental-strip-types --no-warnings test/*.test.ts",
     "lint": "eslint . --ext .ts,.tsx",

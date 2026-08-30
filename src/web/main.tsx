@@ -60,8 +60,9 @@ async function start(): Promise<void> {
 
 void start();
 
-// The service worker keeps the app and its thumbnails available offline.
-if ('serviceWorker' in navigator && import.meta.env.PROD) {
+// The service worker keeps the app and its thumbnails available offline. The
+// single-file build has no separate worker to register, so it opts out.
+if ('serviceWorker' in navigator && import.meta.env.PROD && import.meta.env.VITE_SINGLE_FILE !== 'true') {
   window.addEventListener('load', () => {
     void navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch(() => {
       // Offline support is a bonus; the app works without it.

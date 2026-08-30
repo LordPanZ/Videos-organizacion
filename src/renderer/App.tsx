@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { api, isMac } from './api.ts';
+import { api, onMac } from './api.ts';
 import { subscribeToMain, useLibrary } from './store/useLibrary.ts';
 import { Sidebar } from './components/Sidebar.tsx';
 import { Toolbar } from './components/Toolbar.tsx';
@@ -291,7 +291,7 @@ export function App() {
     const onKey = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
       const typing = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target?.isContentEditable;
-      const mod = isMac ? event.metaKey : event.ctrlKey;
+      const mod = onMac() ? event.metaKey : event.ctrlKey;
 
       if (mod && event.key.toLowerCase() === 'k') {
         event.preventDefault();
