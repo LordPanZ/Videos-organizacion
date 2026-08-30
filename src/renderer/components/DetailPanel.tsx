@@ -4,6 +4,7 @@ import { useLibrary } from '../store/useLibrary.ts';
 import { embedUrl, parseVideoUrl } from '../../core/platforms/detect.ts';
 import { formatCount, formatDate, formatDuration, formatRelative, formatSize } from '../../shared/query/values.ts';
 import { CustomFieldEditor } from './CustomFieldEditor.tsx';
+import { hasCustomCover, imageFromClipboard, pickImage, prepareCover } from '../covers.ts';
 import { TagPicker } from './TagPicker.tsx';
 import { PLATFORM_COLORS, PLATFORM_LABELS, type Collection, type Video, type VideoBookmark } from '../../shared/types.ts';
 
@@ -104,6 +105,43 @@ export function DetailPanel({ videoId, onClose }: DetailPanelProps) {
     };
   }, [videoId]);
 
+  /**
+   * Stores an image as this video's cover, scaling it down first.
+   *
+   * Declared before the early return below, because the paste listener that
+   * uses it is a hook: React requires every hook to run in the same order on
+   * every render, and one placed after a conditional return does not.
+   */
+  const setCover = async (source: File | Blob | null) => {
+    if (!video) return;
+    try {
+      const dataUrl = source === null ? null : (await prepareCover(source)).dataUrl;
+      const updated = await api.videos.setCover(video.id, dataUrl);
+      if (updated) {
+        setVideo(updated);
+        patchVideo(updated.id, updated);
+      }
+      toast('success', source === null ? 'Miniatura quitada.' : 'Miniatura actualizada.');
+    } catch (error) {
+      toast('error', (error as Error).message);
+    }
+  };
+
+  // Copy a screenshot, open the video, paste. Only while this panel is open,
+  // and never while the caret is in a text field.
+  useEffect(() => {
+    const onPaste = (event: ClipboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) return;
+      const image = imageFromClipboard(event);
+      if (!image) return;
+      event.preventDefault();
+      void setCover(image);
+    };
+    window.addEventListener('paste', onPaste);
+    return () => window.removeEventListener('paste', onPaste);
+  });
+
   if (!video) {
     return (
       <aside className="detail">
@@ -116,6 +154,11 @@ export function DetailPanel({ videoId, onClose }: DetailPanelProps) {
       </aside>
     );
   }
+
+  const attachCover = async () => {
+    const file = await pickImage();
+    if (file) await setCover(file);
+  };
 
   /** Applies a change locally first, then persists it. */
   const update = async (patch: Partial<Video>) => {
@@ -207,6 +250,27 @@ export function DetailPanel({ videoId, onClose }: DetailPanelProps) {
           >
             ⟳
           </button>
+        </div>
+
+        <div className="row row-wrap" style={{ gap: 6, marginBottom: 14 }}>
+          <button
+            type="button"
+            className="btn btn-sm"
+            title="Usar una imagen tuya como miniatura"
+            onClick={() => void attachCover()}
+          >
+            🖼 {hasCustomCover(video) ? 'Cambiar miniatura' : 'Poner miniatura'}
+          </button>
+          {hasCustomCover(video) && (
+            <button
+              type="button"
+              className="btn btn-sm btn-ghost"
+              title="Volver a la miniatura original"
+              onClick={() => void setCover(null)}
+            >
+              Quitar
+            </button>
+          )}
         </div>
 
         <div className="detail-section">

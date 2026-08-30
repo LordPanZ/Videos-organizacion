@@ -24,12 +24,13 @@ export const STORES = [
   'savedViews',
   'rules',
   'settings',
+  'covers',
 ] as const;
 
 export type StoreName = (typeof STORES)[number];
 
 const DB_NAME = 'videoteca';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 function request<T>(source: IDBRequest<T>): Promise<T> {
   return new Promise((resolve, reject) => {

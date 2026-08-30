@@ -42,6 +42,19 @@ const AVAILABILITY_LABELS: Record<string, string> = {
 
 const DEFAULT_SORT: SortSpec = { field: 'addedAt', direction: 'desc' };
 
+/** Decodes a `data:` URL into a Blob without a network round trip. */
+function dataUrlToBlob(dataUrl: string): Blob {
+  const [header, payload] = dataUrl.split(',', 2);
+  const type = /data:([^;]+)/.exec(header)?.[1] ?? 'image/jpeg';
+  if (!header.includes(';base64')) {
+    return new Blob([decodeURIComponent(payload ?? '')], { type });
+  }
+  const binary = atob(payload ?? '');
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+  return new Blob([bytes], { type });
+}
+
 /**
  * The browser library.
  *
@@ -65,6 +78,14 @@ export class WebLibrary {
   /** Cached searchable projections, invalidated whenever a video changes. */
   private searchable = new Map<string, SearchableVideo>();
 
+  /**
+   * Cover images the user attached, kept out of the video rows so a query
+   * never drags image data around. The object URLs are created once and reused
+   * for the life of the session.
+   */
+  private covers = new Map<string, Blob>();
+  private coverUrls = new Map<string, string>();
+
   async open(): Promise<void> {
     this.db = await openDb();
     const [videos, tags, authors, collections, fields, bookmarks, views, rules, settings] = await Promise.all([
@@ -78,6 +99,10 @@ export class WebLibrary {
       readAll<AutoTagRule>(this.db, 'rules'),
       readAll<{ key: string; value: unknown }>(this.db, 'settings'),
     ]);
+
+    for (const cover of await readAll<{ id: string; blob: Blob }>(this.db, 'covers')) {
+      this.covers.set(cover.id, cover.blob);
+    }
 
     for (const record of videos) this.videos.set(record.id, record);
     for (const record of tags) this.tags.set(record.id, record);
@@ -121,7 +146,55 @@ export class WebLibrary {
 
   private hydrate(record: VideoRecord): Video {
     const author = record.authorId ? (this.authors.get(record.authorId) ?? null) : null;
-    return toVideo(record, this.resolveTags(record.tagIds), author ? { ...author } : null);
+    const video = toVideo(record, this.resolveTags(record.tagIds), author ? { ...author } : null);
+    const cover = this.coverUrl(record.id);
+    // A cover the user chose always wins over whatever the platform offered.
+    return cover ? { ...video, thumbnailUrl: cover } : video;
+  }
+
+  /** Object URL for a stored cover, created on first use. */
+  private coverUrl(videoId: string): string | null {
+    const existing = this.coverUrls.get(videoId);
+    if (existing) return existing;
+    const blob = this.covers.get(videoId);
+    if (!blob) return null;
+    const url = URL.createObjectURL(blob);
+    this.coverUrls.set(videoId, url);
+    return url;
+  }
+
+  /** True when the user attached their own image to this video. */
+  hasCover(videoId: string): boolean {
+    return this.covers.has(videoId);
+  }
+
+  /**
+   * Stores a cover from a data URL, or clears it when given null.
+   *
+   * The image is held as a Blob rather than as text: a screenshot kept as a
+   * data URL would take a third more space and be copied on every read.
+   */
+  setCover(videoId: string, dataUrl: string | null): Video | null {
+    const record = this.videos.get(videoId);
+    if (!record) return null;
+
+    const stale = this.coverUrls.get(videoId);
+    if (stale) {
+      URL.revokeObjectURL(stale);
+      this.coverUrls.delete(videoId);
+    }
+
+    if (dataUrl === null) {
+      this.covers.delete(videoId);
+      this.forget('covers', [videoId]);
+    } else {
+      const blob = dataUrlToBlob(dataUrl);
+      this.covers.set(videoId, blob);
+      this.persist('covers', [{ id: videoId, blob }]);
+    }
+
+    this.searchable.delete(videoId);
+    return this.hydrate(record);
   }
 
   private searchableFor(record: VideoRecord): SearchableVideo {
@@ -535,6 +608,14 @@ export class WebLibrary {
       collection.videoIds = collection.videoIds.filter((videoId) => !ids.includes(videoId));
       if (collection.videoIds.length !== before) this.persist('collections', [collection]);
     }
+    for (const id of ids) {
+      const url = this.coverUrls.get(id);
+      if (url) URL.revokeObjectURL(url);
+      this.coverUrls.delete(id);
+      this.covers.delete(id);
+    }
+    this.forget('covers', ids);
+
     const orphanBookmarks = [...this.bookmarks.values()].filter((bookmark) => ids.includes(bookmark.videoId));
     for (const bookmark of orphanBookmarks) this.bookmarks.delete(bookmark.id);
     this.forget('bookmarks', orphanBookmarks.map((bookmark) => bookmark.id));
@@ -1167,6 +1248,9 @@ export class WebLibrary {
     this.views.clear();
     this.rules.clear();
     this.searchable.clear();
+    for (const url of this.coverUrls.values()) URL.revokeObjectURL(url);
+    this.coverUrls.clear();
+    this.covers.clear();
     await Promise.all([
       clearStore(this.db, 'videos'),
       clearStore(this.db, 'tags'),
@@ -1176,6 +1260,7 @@ export class WebLibrary {
       clearStore(this.db, 'bookmarks'),
       clearStore(this.db, 'savedViews'),
       clearStore(this.db, 'rules'),
+      clearStore(this.db, 'covers'),
     ]);
   }
 

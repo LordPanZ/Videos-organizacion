@@ -1,6 +1,7 @@
 import { derivedThumbnailUrl, parseVideoUrl } from '../platforms/detect.ts';
 import { fetchText } from './http.ts';
 import type { MetadataProvider, VideoMetadata } from './types.ts';
+import type { Platform } from '../../shared/types.ts';
 
 /** Decodes the handful of HTML entities that show up in meta tags. */
 function decodeEntities(value: string): string {
@@ -35,6 +36,25 @@ function readMeta(html: string, keys: string[]): string | null {
   return null;
 }
 
+/**
+ * Pulls the first plausible poster image out of the markup.
+ *
+ * Only used when the meta tags carried nothing: embed pages often render the
+ * still frame as an ordinary image element instead. Tiny assets and inline
+ * data URIs are skipped, since those are icons and spacers rather than posters.
+ */
+function firstImageSource(html: string): string | null {
+  const pattern = /<img[^>]+src=["']([^"']+)["']/gi;
+  let match: RegExpExecArray | null;
+  while ((match = pattern.exec(html)) !== null) {
+    const source = decodeEntities(match[1]);
+    if (!source.startsWith('http')) continue;
+    if (/sprite|icon|logo|avatar|profile_pic|blank|spacer/i.test(source)) continue;
+    return source;
+  }
+  return null;
+}
+
 /** Parses ISO-8601 durations such as `PT1H2M30S`. */
 export function parseIso8601Duration(value: string | null): number | null {
   if (!value) return null;
@@ -44,6 +64,22 @@ export function parseIso8601Duration(value: string | null): number | null {
   return Math.round(
     Number(days ?? 0) * 86400 + Number(hours ?? 0) * 3600 + Number(minutes ?? 0) * 60 + Number(seconds ?? 0),
   );
+}
+
+/**
+ * Some platforms hide their Open Graph tags behind a login on the canonical
+ * page but still serve them on the embed view, which exists to be read by
+ * other sites. Instagram is the case that matters here: it publishes no
+ * predictable thumbnail URL and its oEmbed endpoint has required an API token
+ * since 2020, so the embed page is the only route left that needs no account.
+ *
+ * This is best effort. Instagram changes what it serves to signed-out clients
+ * without notice, and when it returns nothing the video is still catalogued —
+ * with a generated cover, and with the option to attach a screenshot.
+ */
+function readableUrl(canonicalUrl: string, platform: Platform): string {
+  if (platform !== 'instagram') return canonicalUrl;
+  return `${canonicalUrl.replace(/\/$/, '')}/embed/captioned/`;
 }
 
 /**
@@ -59,7 +95,11 @@ export class OpenGraphProvider implements MetadataProvider {
 
   async fetch(url: string, signal?: AbortSignal): Promise<VideoMetadata | null> {
     const parsed = parseVideoUrl(url);
-    const html = await fetchText(parsed.canonicalUrl, { signal, timeoutMs: 15_000, maxBytes: 1_500_000 });
+    const html = await fetchText(readableUrl(parsed.canonicalUrl, parsed.platform), {
+      signal,
+      timeoutMs: 15_000,
+      maxBytes: 1_500_000,
+    });
 
     const documentTitle = /<title[^>]*>([^<]*)<\/title>/i.exec(html)?.[1]?.trim();
     const title = readMeta(html, ['og:title', 'twitter:title']) ?? (documentTitle ? decodeEntities(documentTitle) : null);
@@ -84,6 +124,7 @@ export class OpenGraphProvider implements MetadataProvider {
       publishedAt: parsedDate && !Number.isNaN(parsedDate.getTime()) ? parsedDate.toISOString() : null,
       thumbnailUrl:
         readMeta(html, ['og:image:secure_url', 'og:image', 'twitter:image']) ??
+        firstImageSource(html) ??
         derivedThumbnailUrl(parsed.platform, parsed.id),
       width: width > 0 ? width : null,
       height: height > 0 ? height : null,

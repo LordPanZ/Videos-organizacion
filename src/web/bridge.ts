@@ -263,6 +263,11 @@ export function createWebBridge(library: WebLibrary) {
         changed('custom-field');
         return count;
       },
+      setCover: async (videoId: string, dataUrl: string | null) => {
+        const updated = library.setCover(videoId, dataUrl);
+        changed('cover');
+        return updated;
+      },
       setTags: async (videoId: string, tagIds: string[]) => {
         const updated = library.setTags(videoId, tagIds);
         changed('tags');

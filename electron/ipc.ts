@@ -116,6 +116,30 @@ export function registerIpc(context: AppContext): void {
     return count;
   });
 
+  // A cover arrives as a data URL from the renderer, which has already scaled
+  // it; the main process only has to put the bytes on disk.
+  handle('videos.setCover', async (videoId: string, dataUrl: string | null) => {
+    const video = library.videos.getById(videoId);
+    if (!video) return null;
+
+    if (video.thumbnailPath?.includes('cover-')) {
+      await context.thumbnails.removeRelative(video.thumbnailPath).catch(() => undefined);
+    }
+
+    if (dataUrl === null) {
+      library.videos.update(videoId, { thumbnailPath: null });
+    } else {
+      const match = /^data:(image\/[a-z+]+);base64,(.+)$/i.exec(dataUrl);
+      if (!match) throw new Error('La imagen no tiene un formato admitido.');
+      const extension = match[1] === 'image/png' ? '.png' : '.jpg';
+      const relative = await context.thumbnails.storeBuffer(videoId, Buffer.from(match[2], 'base64'), extension);
+      library.videos.update(videoId, { thumbnailPath: relative });
+    }
+
+    changed('cover');
+    return library.videos.getById(videoId);
+  });
+
   handle('videos.setTags', (videoId: string, tagIds: string[]) => {
     library.tags.setForVideo(videoId, tagIds);
     library.videos.reindex(videoId);

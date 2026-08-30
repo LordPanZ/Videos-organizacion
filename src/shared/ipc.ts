@@ -75,6 +75,8 @@ export interface VideotecaApi {
     updateMany(ids: string[], patch: VideoPatch): Promise<number>;
     remove(ids: string[], deleteFiles: boolean): Promise<number>;
     setCustomField(ids: string[], key: string, value: CustomFieldValue): Promise<number>;
+    /** Attaches a cover image, or clears it when `dataUrl` is null. */
+    setCover(videoId: string, dataUrl: string | null): Promise<Video | null>;
     setTags(videoId: string, tagIds: string[]): Promise<Video | null>;
     addTags(videoIds: string[], tagIds: string[]): Promise<number>;
     removeTags(videoIds: string[], tagIds: string[]): Promise<number>;
@@ -186,6 +188,7 @@ export const IPC_CHANNELS: string[] = [
   'videos.updateMany',
   'videos.remove',
   'videos.setCustomField',
+  'videos.setCover',
   'videos.setTags',
   'videos.addTags',
   'videos.removeTags',

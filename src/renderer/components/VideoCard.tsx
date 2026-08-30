@@ -1,5 +1,6 @@
 import { memo, useState } from 'react';
 import { thumbnailSrc } from '../api.ts';
+import { generatedCover, initialsFor } from '../covers.ts';
 import { formatDuration } from '../../shared/query/values.ts';
 import { PLATFORM_COLORS, PLATFORM_LABELS, type Video } from '../../shared/types.ts';
 
@@ -47,7 +48,12 @@ export const VideoCard = memo(function VideoCard({
         {source ? (
           <img src={source} alt="" loading="lazy" draggable={false} onError={() => setFailed(true)} />
         ) : (
-          <div className="placeholder">🎬</div>
+          // Platforms that expose no thumbnail still get a cover of their own,
+          // derived from the video's id so the grid reads as sorted rather
+          // than half-empty.
+          <div className="card-generated" style={generatedCover(video.id, PLATFORM_COLORS[video.platform])}>
+            <span>{initialsFor(video.title)}</span>
+          </div>
         )}
 
         <div

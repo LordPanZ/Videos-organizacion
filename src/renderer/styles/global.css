@@ -632,6 +632,31 @@ a {
   opacity: 0.3;
 }
 
+/* Stand-in cover for videos with no image, built from the video's own data. */
+.card-generated {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+}
+
+.card-generated span {
+  font-size: clamp(20px, 14cqw, 42px);
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: rgba(255, 255, 255, 0.82);
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.45);
+  user-select: none;
+}
+
+.card-thumb {
+  container-type: inline-size;
+}
+
+.list-row .card-generated span {
+  font-size: 17px;
+}
+
 .card-badges {
   position: absolute;
   top: 8px;

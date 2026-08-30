@@ -34,6 +34,17 @@ duración y la fecha, genera etiquetas automáticamente y lo coloca en tu biblio
 puedes encontrarlo por lo que sea: plataforma, temática, creador, duración, año, valoración… o por
 los parámetros que tú mismo inventes.
 
+### Miniaturas siempre
+
+- YouTube y Vimeo dan su miniatura sin ninguna petición: se deduce de la propia dirección.
+- Con **yt-dlp** instalado (escritorio) se obtiene la de casi cualquier sitio, Instagram incluido.
+- **Instagram sin yt-dlp**: se intenta leer su página de inserción, que es la única vía que no
+  requiere cuenta. No siempre responde, porque Instagram cambia lo que sirve a visitantes sin sesión.
+- Cuando nada de lo anterior da resultado, **puedes poner tu propia imagen**: una captura del móvil,
+  una foto, o pegar una imagen del portapapeles. Se reescala y se guarda en el dispositivo.
+- Y si aún así no hay imagen, la tarjeta no queda en blanco: se dibuja una **portada generada** a
+  partir del propio vídeo, teñida con el color de su plataforma, distinta para cada uno.
+
 ### Muy visual
 
 - **Cuadrícula de miniaturas** con tamaño ajustable de 150 a 420 px, para reconocer un vídeo de un vistazo.

@@ -84,6 +84,26 @@ export class ThumbnailCache {
     return target.relative;
   }
 
+  /**
+   * Writes an image the user supplied and returns its relative path.
+   *
+   * Keyed by the video id rather than by content, so replacing a cover
+   * overwrites the old file instead of leaving it behind.
+   */
+  async storeBuffer(key: string, data: Buffer, extension = '.jpg'): Promise<string> {
+    const hash = createHash('sha256').update(key).digest('hex');
+    const relative = path.join(hash.slice(0, 2), `cover-${hash.slice(2, 34)}${extension}`);
+    const absolute = path.join(this.rootDir, relative);
+    await mkdir(path.dirname(absolute), { recursive: true });
+    await writeFile(absolute, data);
+    return relative;
+  }
+
+  /** Deletes a stored file, ignoring one that is already gone. */
+  async removeRelative(relative: string): Promise<void> {
+    await rm(this.absolutePath(relative), { force: true });
+  }
+
   /** Total bytes held by the cache. */
   async size(): Promise<number> {
     let total = 0;
