@@ -20,7 +20,10 @@ export function initialsFor(title: string): string {
     .filter(Boolean);
   if (words.length === 0) return '?';
 
-  const strong = words.filter((word) => !FILLER.has(word.toLowerCase()));
+  const strong = words.filter(
+    // A separator on its own is not a word: "YouTube · abc123" reads YA, not Y·.
+    (word) => /[\p{L}\p{N}]/u.test(word) && !FILLER.has(word.toLowerCase()),
+  );
   // If every word is filler the title is all filler, so fall back to it.
   const picked = strong.length > 0 ? strong : words;
   if (picked.length === 1) return picked[0].slice(0, 2).toUpperCase();

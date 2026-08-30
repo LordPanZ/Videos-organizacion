@@ -22,6 +22,11 @@ describe('initialsFor', () => {
     assert.equal(initialsFor('de la'), 'DL');
   });
 
+  test('ignores a separator standing in for a word', () => {
+    assert.equal(initialsFor('YouTube · abc123'), 'YA');
+    assert.equal(initialsFor('TikTok — 7222222'), 'T7');
+  });
+
   test('ignores leading punctuation and emoji', () => {
     assert.equal(initialsFor('🔥 Bocetos rápidos'), 'BR');
     assert.equal(initialsFor('!!! probando ahora'), 'PA');
