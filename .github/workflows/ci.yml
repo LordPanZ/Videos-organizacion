@@ -7,10 +7,11 @@ on:
   pull_request:
   workflow_dispatch:
     inputs:
-      publish:
-        description: 'Build the installers for Windows, macOS and Linux'
-        type: boolean
-        default: true
+      version:
+        description: 'Release tag to create, e.g. v1.0.0'
+        type: string
+        required: true
+        default: 'v1.0.0'
 
 jobs:
   verify:
@@ -76,17 +77,36 @@ jobs:
             release/**/*.deb
           if-no-files-found: warn
 
-      # On a tag, also attach the installers to a public release so they can be
-      # downloaded without a GitHub account.
+      # Attach the installers to a public release so they can be downloaded
+      # without a GitHub account. On a manual run the release (and its tag) is
+      # created here from the checked-out commit.
       - name: Attach to release
-        if: startsWith(github.ref, 'refs/tags/v')
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          INPUT_VERSION: ${{ inputs.version }}
         run: |
-          tag="${GITHUB_REF_NAME}"
-          # The first matrix job to finish creates the release; the rest attach to it.
-          gh release view "$tag" >/dev/null 2>&1 || \
-            gh release create "$tag" --title "Videoteca $tag" --notes "Instaladores de Videoteca $tag."
+          set -euo pipefail
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            tag="${GITHUB_REF_NAME}"
+          else
+            tag="${INPUT_VERSION}"
+          fi
+
+          # The first matrix job to finish creates the release; the others
+          # attach their own installer to it.
+          if ! gh release view "$tag" >/dev/null 2>&1; then
+            gh release create "$tag" \
+              --target "$GITHUB_SHA" \
+              --title "Videoteca $tag" \
+              --notes "Instaladores de Videoteca $tag para Windows, macOS y Linux." || true
+          fi
+
+          # Wait for whichever job is creating the release to finish doing so.
+          for _ in $(seq 1 30); do
+            gh release view "$tag" >/dev/null 2>&1 && break
+            sleep 5
+          done
+
           find release -type f \( -name '*.exe' -o -name '*.dmg' -o -name '*.AppImage' -o -name '*.deb' \) \
-            -exec gh release upload "$tag" {} --clobber \;
+            -print -exec gh release upload "$tag" {} --clobber \;
