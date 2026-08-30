@@ -1,7 +1,7 @@
 name: Web app
 
-# Publishes the installable web version to GitHub Pages. The desktop
-# installers are built separately by the CI workflow.
+# Builds the installable web version and publishes it to the gh-pages branch,
+# which is what GitHub Pages serves for this repository.
 on:
   push:
     branches: ['claude/video-organization-app-rgcsts', 'main']
@@ -16,19 +16,17 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
-# One deployment at a time; queued runs supersede rather than cancel, so the
+# One deployment at a time; a queued run supersedes rather than cancels, so the
 # last push always wins.
 concurrency:
   group: pages
   cancel-in-progress: false
 
 jobs:
-  build:
-    name: Build the web app
+  deploy:
+    name: Build and publish
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -43,6 +41,9 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      - name: Test
+        run: npm test
+
       - name: Build
         run: npm run build:web
         env:
@@ -50,23 +51,21 @@ jobs:
           # that prefix.
           VIDEOTECA_BASE: /${{ github.event.repository.name }}/
 
-      # Requires Pages to be switched on once for the repository, with its
-      # source set to GitHub Actions. The automatic token cannot do that: only
-      # a repository administrator can.
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
+      - name: Publish to gh-pages
+        run: |
+          set -euo pipefail
+          # `.nojekyll` stops Pages from filtering files whose names start with
+          # an underscore, which a bundler is free to produce.
+          touch dist/web/.nojekyll
 
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: dist/web
-
-  deploy:
-    name: Deploy
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
+          cd dist/web
+          git init -q -b gh-pages
+          git config user.name  'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -q -m "Publish ${GITHUB_SHA::7}"
+          # The branch holds only the built site, so each deploy replaces it
+          # wholesale rather than accumulating history nobody reads.
+          git push -f "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" gh-pages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -6,7 +6,7 @@ para Windows, macOS y Linux. Todo local, sin cuentas, sin nube, sin telemetría.
 
 ## 📱 En el móvil
 
-**https://lordpanz.github.io/Videos-organizacion/**
+### 👉 **https://lordpanz.github.io/Videos-organizacion/**
 
 Se abre en el navegador y se instala en la pantalla de inicio como cualquier otra app:
 
