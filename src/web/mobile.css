@@ -32,9 +32,14 @@
     transform: none;
   }
 
+  /* Always out, because there is no hover — but in the corner, off the
+     initials, which on X and Instagram are the only thing identifying the
+     video until it gets a picture. */
   .card-play {
     opacity: 1;
     background: transparent;
+    place-items: start start;
+    padding: 8px;
   }
 
   .card-play span {

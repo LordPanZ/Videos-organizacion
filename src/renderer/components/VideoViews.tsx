@@ -1,7 +1,7 @@
 import { memo, useState } from 'react';
 import { thumbnailSrc } from '../api.ts';
 import { generatedCover } from '../covers.ts';
-import { initialsFor } from '../../shared/initials.ts';
+import { coverInitials } from '../../shared/initials.ts';
 import { formatCount, formatDate, formatDuration, formatSize } from '../../shared/query/values.ts';
 import { PLATFORM_COLORS, PLATFORM_LABELS, type CustomField, type SortField, type SortSpec, type Video } from '../../shared/types.ts';
 
@@ -31,7 +31,7 @@ export const VideoRow = memo(function VideoRow({ video, selected, onSelect, onOp
           <img src={source} alt="" loading="lazy" draggable={false} onError={() => setFailed(true)} />
         ) : (
           <div className="card-generated" style={generatedCover(video.id, PLATFORM_COLORS[video.platform])}>
-            <span>{initialsFor(video.title)}</span>
+            <span>{coverInitials(video)}</span>
           </div>
         )}
       </div>

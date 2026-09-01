@@ -123,6 +123,13 @@ mensaje concreto en lugar de devolver cero resultados en silencio.
 - **Vistas guardadas** en el panel lateral (ocho vienen ya hechas).
 - **Panel lateral con facetas** y recuentos en vivo: plataformas, etiquetas, creadores, campos
   personalizados, duración y años.
+- **Miniaturas para X**: X no publica miniatura por la vía habitual, así que se consulta su propio
+  servicio de incrustación, que además devuelve el texto del post como título. Es a la primera:
+  si el servicio no responde, el vídeo se queda con la portada de su cuenta y nada más cambia.
+  En el contenedor hay un botón *Buscar miniaturas* para los que aún no tengan.
+- **Portada inventada con sentido**: cuando la plataforma no da ninguna imagen, la portada lleva
+  las iniciales de la cuenta, no las de la plataforma — si no, todos los vídeos de X saldrían con
+  las mismas dos letras. Y con 🖼 en la propia tarjeta se le pone una captura tuya.
 - **Título editable**: pulsa sobre el nombre de un vídeo y escribe otro. Instagram y otras
   plataformas no entregan sus datos, así que llegan con un nombre provisional; una vez renombrado,
   el buscador lo encuentra por el nombre nuevo.

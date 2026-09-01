@@ -2,6 +2,8 @@
  * Monogram used on generated covers, for videos that have no picture.
  */
 
+import { PLATFORM_LABELS, type Platform } from './types.ts';
+
 /**
  * Words too weak to earn a letter in the monogram. "Rutina de fuerza" should
  * read RF, not RD.
@@ -28,4 +30,33 @@ export function initialsFor(title: string): string {
   const picked = strong.length > 0 ? strong : words;
   if (picked.length === 1) return picked[0].slice(0, 2).toUpperCase();
   return (picked[0][0] + picked[1][0]).toUpperCase();
+}
+
+/**
+ * True when a title is one of the placeholders built from the address alone,
+ * because the service would not say what the video actually is: either the
+ * platform or the account, followed by the video id.
+ */
+export function isPlaceholderTitle(title: string, platform: Platform): boolean {
+  if (title.startsWith(`${PLATFORM_LABELS[platform]} · `)) return true;
+  return title.startsWith('@') && title.includes(' · ');
+}
+
+/**
+ * Letters for a video's generated cover.
+ *
+ * X and Instagram hand a browser nothing, so their videos are named after
+ * their own id — and every card from one platform ends up with the same two
+ * letters, which is the one thing a cover must not do. The account is the
+ * next best thing that is actually known.
+ */
+export function coverInitials(video: {
+  title: string;
+  platform: Platform;
+  author: { name: string } | null;
+}): string {
+  if (isPlaceholderTitle(video.title, video.platform) && video.author?.name) {
+    return initialsFor(video.author.name);
+  }
+  return initialsFor(video.title);
 }

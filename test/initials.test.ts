@@ -1,6 +1,6 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { initialsFor } from '../src/shared/initials.ts';
+import { coverInitials, initialsFor } from '../src/shared/initials.ts';
 
 describe('initialsFor', () => {
   test('takes the first letter of the first two words', () => {
@@ -35,5 +35,28 @@ describe('initialsFor', () => {
   test('survives a title with nothing to work with', () => {
     assert.equal(initialsFor(''), '?');
     assert.equal(initialsFor('###'), '?');
+  });
+});
+
+describe('coverInitials', () => {
+  const video = (title: string, author: string | null) => ({
+    title,
+    platform: 'twitter' as const,
+    author: author === null ? null : { name: author },
+  });
+
+  test('a title the platform actually gave wins', () => {
+    assert.equal(coverInitials(video('Aterrizaje del cohete', '@nasa')), 'AC');
+  });
+
+  test('an account beats a placeholder built from the address', () => {
+    // Otherwise every X video shows the same two letters, which is the one
+    // thing a cover must not do.
+    assert.equal(coverInitials(video('X / Twitter · 1890000000000000001', '@nasa')), 'NA');
+    assert.equal(coverInitials(video('@nasa · 1890000000000000001', '@nasa')), 'NA');
+  });
+
+  test('a placeholder with no account still gives something', () => {
+    assert.equal(coverInitials(video('X / Twitter · 1890000000000000001', null)), 'XT');
   });
 });

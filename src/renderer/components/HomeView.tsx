@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api, thumbnailSrc } from '../api.ts';
 import { useLibrary } from '../store/useLibrary.ts';
 import { generatedCover } from '../covers.ts';
-import { initialsFor } from '../../shared/initials.ts';
+import { coverInitials } from '../../shared/initials.ts';
 import { formatDate, formatDuration } from '../../shared/query/values.ts';
 import { PLATFORM_COLORS, PLATFORM_LABELS, type Video } from '../../shared/types.ts';
 
@@ -45,7 +45,7 @@ function Poster({ video, showProgress, onOpen, onPlay }: PosterProps) {
           <img src={source} alt="" loading="lazy" draggable={false} onError={() => setFailed(true)} />
         ) : (
           <div className="card-generated" style={generatedCover(video.id, PLATFORM_COLORS[video.platform])}>
-            <span>{initialsFor(video.title)}</span>
+            <span>{coverInitials(video)}</span>
           </div>
         )}
 

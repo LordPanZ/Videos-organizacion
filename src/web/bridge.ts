@@ -3,6 +3,7 @@ import { resolveMetadata, splitUrls } from './metadata.ts';
 import { requestPersistence, storageEstimate } from './idb.ts';
 import { extractHashtags, ruleMatches } from '../core/services/autoTag.ts';
 import { durationBucket, DURATION_BUCKETS } from '../shared/query/values.ts';
+import { isPlaceholderTitle } from '../shared/initials.ts';
 import { DEFAULT_SETTINGS } from '../shared/settings.ts';
 import { PLATFORM_COLORS, PLATFORM_LABELS, type AppSettings, type ImportReport, type Tag, type Video } from '../shared/types.ts';
 import type { EventMap, EventName } from '../shared/ipc.ts';
@@ -310,7 +311,9 @@ export function createWebBridge(library: WebLibrary) {
           const metadata = await resolveMetadata(video.url);
           if (metadata.enriched) {
             library.updateVideo(id, {
-              title: metadata.title,
+              // A name the user typed is never overwritten by a refresh; only
+              // the placeholder built from the address gets replaced.
+              title: isPlaceholderTitle(video.title, video.platform) ? metadata.title : video.title,
               thumbnailUrl: metadata.thumbnailUrl ?? video.thumbnailUrl,
               durationSeconds: metadata.durationSeconds ?? video.durationSeconds,
               availability: 'ok',

@@ -1,7 +1,7 @@
 import { memo, useState } from 'react';
 import { thumbnailSrc } from '../api.ts';
 import { generatedCover } from '../covers.ts';
-import { initialsFor } from '../../shared/initials.ts';
+import { coverInitials } from '../../shared/initials.ts';
 import { formatDuration } from '../../shared/query/values.ts';
 import { PLATFORM_COLORS, PLATFORM_LABELS, type Video } from '../../shared/types.ts';
 
@@ -16,6 +16,12 @@ export interface VideoCardProps {
   onToggleFavorite(): void;
   onToggleSelect(event: React.MouseEvent): void;
   onContextMenu(event: React.MouseEvent): void;
+  /**
+   * Offered on a card with no picture of its own. X and Instagram give a
+   * browser nothing to show, so attaching a screenshot has to be reachable
+   * from the card itself rather than two taps deep.
+   */
+  onAddCover?(): void;
 }
 
 /** One thumbnail tile. Memoized: a 5000-item grid re-renders constantly. */
@@ -30,6 +36,7 @@ export const VideoCard = memo(function VideoCard({
   onToggleFavorite,
   onToggleSelect,
   onContextMenu,
+  onAddCover,
 }: VideoCardProps) {
   const [failed, setFailed] = useState(false);
   const source = failed ? null : thumbnailSrc(video);
@@ -53,7 +60,7 @@ export const VideoCard = memo(function VideoCard({
           // derived from the video's id so the grid reads as sorted rather
           // than half-empty.
           <div className="card-generated" style={generatedCover(video.id, PLATFORM_COLORS[video.platform])}>
-            <span>{initialsFor(video.title)}</span>
+            <span>{coverInitials(video)}</span>
           </div>
         )}
 
@@ -88,6 +95,21 @@ export const VideoCard = memo(function VideoCard({
         >
           {selected ? '✓' : ''}
         </button>
+
+        {onAddCover && (
+          <button
+            type="button"
+            className="card-cover-add"
+            aria-label="Poner una imagen tuya como miniatura"
+            title="Poner una imagen tuya como miniatura"
+            onClick={(event) => {
+              event.stopPropagation();
+              onAddCover();
+            }}
+          >
+            🖼
+          </button>
+        )}
 
         <div className="card-actions">
           <button
