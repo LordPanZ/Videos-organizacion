@@ -62,6 +62,19 @@ export type TagRecord = Omit<Tag, 'videoCount'>;
 export type AuthorRecord = Omit<Author, 'videoCount'>;
 export type CustomFieldRecord = CustomField;
 
+/**
+ * Repairs a record read back from storage.
+ *
+ * Fields added after a release are simply absent from everything written
+ * before it, and an absent flag has to read as its safe default. `hidden` in
+ * particular: read as anything but false, a whole library disappears from
+ * every view the moment the app updates.
+ */
+export function healRecord(record: VideoRecord): VideoRecord {
+  record.hidden = record.hidden === true;
+  return record;
+}
+
 /** Builds the `Video` the interface consumes from a stored record. */
 export function toVideo(record: VideoRecord, tags: Tag[], author: Author | null): Video {
   return {

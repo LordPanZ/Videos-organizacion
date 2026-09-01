@@ -1,5 +1,5 @@
 import { clearStore, deleteMany, openDb, putMany, readAll, type StoreName } from './idb.ts';
-import { newId, slugify, toVideo, type AuthorRecord, type CollectionRecord, type CustomFieldRecord, type TagRecord, type VideoRecord } from './records.ts';
+import { newId, slugify, toVideo, type AuthorRecord, type CollectionRecord, type CustomFieldRecord, type TagRecord, type VideoRecord, healRecord } from './records.ts';
 import { evaluate, normalize, toSearchable, type EvaluationContext, type SearchableVideo } from './evaluate.ts';
 import { parseQuery } from '../shared/query/parser.ts';
 import { DURATION_BUCKETS } from '../shared/query/values.ts';
@@ -118,7 +118,7 @@ export class WebLibrary {
       this.covers.set(cover.id, cover.blob);
     }
 
-    for (const record of videos) this.videos.set(record.id, record);
+    for (const record of videos) this.videos.set(record.id, healRecord(record));
     for (const record of tags) this.tags.set(record.id, record);
     for (const record of authors) this.authors.set(record.id, record);
     for (const record of collections) this.collections.set(record.id, record);
@@ -170,7 +170,7 @@ export class WebLibrary {
    * in the container without ever showing it.
    */
   private *visible(): Generator<VideoRecord> {
-    for (const record of this.videos.values()) if (!record.hidden) yield record;
+    for (const record of this.videos.values()) if (record.hidden !== true) yield record;
   }
 
   /* ---------------------------------------------------------------- reading */
@@ -390,7 +390,7 @@ export class WebLibrary {
 
     const wantHidden = options.hidden === 'only';
     const matched = scope.filter((record) => {
-      if (record.hidden !== wantHidden) return false;
+      if ((record.hidden === true) !== wantHidden) return false;
       if (!options.includeArchived && record.archived) return false;
       return evaluate(parsed.root, this.searchableFor(record), context);
     });
@@ -872,7 +872,10 @@ export class WebLibrary {
 
   /** Members of a collection that are not in the container. */
   private countVisible(videoIds: string[]): number {
-    return videoIds.filter((id) => this.videos.get(id)?.hidden === false).length;
+    return videoIds.filter((id) => {
+      const record = this.videos.get(id);
+      return record !== undefined && record.hidden !== true;
+    }).length;
   }
 
   listCollections(): Collection[] {
