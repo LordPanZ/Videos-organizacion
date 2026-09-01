@@ -60,10 +60,19 @@ export function ContainerView() {
       const found = after.videos.filter(
         (video) => missing.includes(video.id) && thumbnailSrc(video) !== null,
       ).length;
+      if (found > 0) {
+        toast('success', `${found} de ${missing.length} han conseguido miniatura.`);
+        return;
+      }
+
+      // "Nothing found" is not an answer anyone can act on. Ask the platform
+      // why, so the message says whether this is worth trying again at all.
+      const first = (videos ?? []).find((video) => missing.includes(video.id));
+      const reason = first ? await api.videos.diagnose(first.platform, first.platformId) : null;
       toast(
-        found > 0 ? 'success' : 'info',
-        found > 0
-          ? `${found} de ${missing.length} han conseguido miniatura.`
+        'info',
+        reason
+          ? `${reason}. Ponles una captura tuya con 🖼 en cada tarjeta.`
           : 'Ninguna plataforma ha dado una imagen. Puedes ponerles una captura con 🖼.',
       );
     } catch {

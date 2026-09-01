@@ -1,5 +1,5 @@
 import { WebLibrary } from './store.ts';
-import { resolveMetadata, splitUrls } from './metadata.ts';
+import { diagnoseSource, resolveMetadata, splitUrls, twitterEmbedUrl } from './metadata.ts';
 import { requestPersistence, storageEstimate } from './idb.ts';
 import { extractHashtags, ruleMatches } from '../core/services/autoTag.ts';
 import { durationBucket, DURATION_BUCKETS } from '../shared/query/values.ts';
@@ -330,6 +330,15 @@ export function createWebBridge(library: WebLibrary) {
         return { updated, failed };
       },
       checkLinks: async () => ({ updated: 0, failed: 0 }),
+
+      /**
+       * Why a platform is not handing over pictures. Only meaningful after an
+       * attempt has already come back with nothing.
+       */
+      diagnose: async (platform: string, platformId: string | null) => {
+        if (platform !== 'twitter' || !platformId) return null;
+        return `X ${await diagnoseSource(twitterEmbedUrl(platformId))}`;
+      },
     },
 
     import: {

@@ -194,6 +194,10 @@ export function registerIpc(context: AppContext): void {
     }
   });
 
+  // The desktop reads pages directly, with no cross-origin restriction to
+  // report, so there is nothing useful to say here.
+  handle('videos.diagnose', () => null);
+
   // Checking links is a refresh that only records availability.
   handle('videos.checkLinks', async (ids: string[]) => {
     const controller = context.beginOperation();

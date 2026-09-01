@@ -89,6 +89,11 @@ export interface VideotecaApi {
     duplicates(): Promise<DuplicateGroup[]>;
     refresh(ids: string[]): Promise<{ updated: number; failed: number }>;
     checkLinks(ids: string[]): Promise<{ updated: number; failed: number }>;
+    /**
+     * Why a platform is handing over no picture. Null when there is nothing
+     * useful to say. Only meaningful after an attempt returned nothing.
+     */
+    diagnose(platform: string, platformId: string | null): Promise<string | null>;
   };
   import: {
     urls(request: ImportRequest): Promise<ImportReport>;
@@ -201,6 +206,7 @@ export const IPC_CHANNELS: string[] = [
   'videos.duplicates',
   'videos.refresh',
   'videos.checkLinks',
+  'videos.diagnose',
   'import.urls',
   'import.clipboard',
   'import.playlist',

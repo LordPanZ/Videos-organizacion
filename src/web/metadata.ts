@@ -73,6 +73,36 @@ function titleFromUrl(url: string, platform: Platform, platformId: string | null
   }
 }
 
+/**
+ * Why a service would not answer, in words a person can act on.
+ *
+ * Used only after an attempt has already come back empty: "nothing found" and
+ * "the service refuses browsers outright" call for different next steps, and
+ * from inside the app they look identical.
+ */
+export async function diagnoseSource(url: string, timeoutMs = 6000): Promise<string> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, { signal: controller.signal, mode: 'cors' });
+    if (response.ok) return 'respondió correctamente';
+    return `respondió con el código ${response.status}`;
+  } catch (error) {
+    if ((error as Error).name === 'AbortError') return 'no contestó a tiempo';
+    // A cross-origin refusal reaches the page as a bare TypeError, with the
+    // real reason kept in the console for security reasons.
+    return 'no permite la consulta desde el navegador';
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** The address X's embed service expects for a post. */
+export function twitterEmbedUrl(id: string): string {
+  const token = ((Number(id) / 1e15) * Math.PI).toString(6 ** 2).replace(/(0+|\.)/g, '');
+  return `https://cdn.syndication.twimg.com/tweet-result?id=${encodeURIComponent(id)}&token=${token}&lang=es`;
+}
+
 async function fetchJson(url: string, timeoutMs: number): Promise<Record<string, unknown> | null> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -106,12 +136,7 @@ async function fetchJson(url: string, timeoutMs: number): Promise<Record<string,
  * anyone.
  */
 async function twitterEmbed(id: string, timeoutMs: number): Promise<Partial<WebMetadata> | null> {
-  // The token the service expects is derived from the post id.
-  const token = ((Number(id) / 1e15) * Math.PI).toString(6 ** 2).replace(/(0+|\.)/g, '');
-  const data = await fetchJson(
-    `https://cdn.syndication.twimg.com/tweet-result?id=${encodeURIComponent(id)}&token=${token}&lang=es`,
-    timeoutMs,
-  );
+  const data = await fetchJson(twitterEmbedUrl(id), timeoutMs);
   if (!data) return null;
 
   const media = Array.isArray(data.mediaDetails) ? (data.mediaDetails as Record<string, unknown>[]) : [];
