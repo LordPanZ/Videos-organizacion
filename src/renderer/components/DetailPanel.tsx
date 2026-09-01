@@ -7,6 +7,7 @@ import { CustomFieldEditor } from './CustomFieldEditor.tsx';
 import { hasCustomCover, imageFromClipboard, pickImage, prepareCover } from '../covers.ts';
 import { TagPicker } from './TagPicker.tsx';
 import { PLATFORM_COLORS, PLATFORM_LABELS, type Collection, type Video, type VideoBookmark } from '../../shared/types.ts';
+import { shareText, whatsappLink } from '../../shared/share.ts';
 
 function Stars({ value, onChange }: { value: number; onChange(next: number): void }) {
   return (
@@ -158,6 +159,9 @@ export interface DetailPanelProps {
 /** Everything about one video, and every way to change it. */
 export function DetailPanel({ videoId, onClose }: DetailPanelProps) {
   const { fields, patchVideo, refresh, toast, settings, containerUnlocked } = useLibrary();
+  // The native share sheet, where the phone has one; on a desktop browser
+  // there is nothing behind it, so the button stays away.
+  const canShare = typeof navigator.share === 'function';
   const [video, setVideo] = useState<Video | null>(null);
   const [bookmarks, setBookmarks] = useState<VideoBookmark[]>([]);
   const [inCollections, setInCollections] = useState<Collection[]>([]);
@@ -307,6 +311,32 @@ export function DetailPanel({ videoId, onClose }: DetailPanelProps) {
           >
             🔗 Copiar
           </button>
+          {/* An anchor rather than a button: a plain link is never held back
+              by a pop-up blocker, which a scripted window can be. */}
+          <a
+            className="btn btn-sm"
+            href={whatsappLink(video)}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Enviar el enlace por WhatsApp"
+          >
+            💬 WhatsApp
+          </a>
+          {canShare && (
+            <button
+              type="button"
+              className="btn btn-sm"
+              title="Enviar a otra aplicación"
+              onClick={() => {
+                void navigator
+                  .share({ title: video.title, text: shareText(video), url: video.url })
+                  // Cancelling the sheet rejects too, and that is not a failure.
+                  .catch(() => undefined);
+              }}
+            >
+              ↗ Compartir
+            </button>
+          )}
           {video.filePath ? (
             <button type="button" className="btn btn-sm" onClick={() => void api.videos.openFolder(video.id)}>
               📂 Carpeta

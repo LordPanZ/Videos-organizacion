@@ -130,6 +130,9 @@ mensaje concreto en lugar de devolver cero resultados en silencio.
 - **Portada inventada con sentido**: cuando la plataforma no da ninguna imagen, la portada lleva
   las iniciales de la cuenta, no las de la plataforma — si no, todos los vídeos de X saldrían con
   las mismas dos letras. Y con 🖼 en la propia tarjeta se le pone una captura tuya.
+- **Compartir por WhatsApp**: cada vídeo tiene su botón, que manda el nombre y el enlace original.
+  Donde el móvil ofrece su propio menú de compartir, hay además un botón para cualquier otra
+  aplicación. Viaja el enlace, no una copia del vídeo.
 - **Título editable**: pulsa sobre el nombre de un vídeo y escribe otro. Instagram y otras
   plataformas no entregan sus datos, así que llegan con un nombre provisional; una vez renombrado,
   el buscador lo encuentra por el nombre nuevo.
