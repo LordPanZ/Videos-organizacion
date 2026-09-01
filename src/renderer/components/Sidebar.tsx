@@ -71,6 +71,8 @@ export interface SidebarProps {
   onManageTags(): void;
   onNewCollection(): void;
   onEditCollection(id: string): void;
+  /** Asks for the code, when the container has not been opened yet. */
+  onOpenContainer(): void;
   /** Called after any navigation, so a narrow layout can close the drawer. */
   onNavigate?(): void;
 }
@@ -82,7 +84,8 @@ export interface SidebarProps {
  * state, so what the user sees in the grid always matches what the search box
  * says — and any filter reached by clicking can also be typed.
  */
-export function Sidebar({ onManageFields, onManageTags, onNewCollection, onEditCollection, onNavigate }: SidebarProps) {
+export function Sidebar({ onManageFields, onManageTags, onNewCollection, onEditCollection,
+  onOpenContainer, onNavigate }: SidebarProps) {
   const {
     query,
     facets,
@@ -93,6 +96,7 @@ export function Sidebar({ onManageFields, onManageTags, onNewCollection, onEditC
     total,
     collectionId,
     screen,
+    containerUnlocked,
     runQuery,
     setCollection,
     setScreen,
@@ -177,6 +181,18 @@ export function Sidebar({ onManageFields, onManageTags, onNewCollection, onEditC
             active={screen === 'duplicates'}
             onClick={() => {
               setScreen('duplicates');
+              onNavigate?.();
+            }}
+          />
+          <NavItem
+            icon={containerUnlocked ? '🔓' : '🔒'}
+            label="Contenedor"
+            active={screen === 'container'}
+            onClick={() => {
+              // Locked, the entry asks for the code instead of navigating; it
+              // shows no count either way, so the sidebar gives nothing away.
+              if (containerUnlocked) setScreen('container');
+              else onOpenContainer();
               onNavigate?.();
             }}
           />

@@ -125,7 +125,7 @@ export function createWebBridge(library: WebLibrary) {
 
   const importUrls = async (
     urls: string[],
-    options: { tagIds?: string[]; collectionId?: string; autoTag?: boolean } = {},
+    options: { tagIds?: string[]; collectionId?: string; autoTag?: boolean; hidden?: boolean } = {},
   ): Promise<ImportReport> => {
     const report: ImportReport = { requested: urls.length, added: 0, duplicates: 0, failed: [], videoIds: [] };
     const settings = readSettings();
@@ -154,6 +154,7 @@ export function createWebBridge(library: WebLibrary) {
           width: metadata.width,
           height: metadata.height,
           isShort: metadata.isShort,
+          hidden: options.hidden ?? false,
         });
 
         if (created === null) {
@@ -329,7 +330,7 @@ export function createWebBridge(library: WebLibrary) {
     },
 
     import: {
-      urls: async (request: { urls: string[]; tagIds?: string[]; collectionId?: string; autoTag?: boolean }) =>
+      urls: async (request: { urls: string[]; tagIds?: string[]; collectionId?: string; autoTag?: boolean; hidden?: boolean }) =>
         importUrls(request.urls ?? [], request),
       clipboard: async () => {
         const text = await navigator.clipboard.readText().catch(() => '');

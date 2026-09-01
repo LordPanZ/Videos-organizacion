@@ -406,3 +406,91 @@ describe('stats and duplicates', () => {
     assert.equal(groups[0].videos.length, 2);
   });
 });
+
+describe('container', () => {
+  /** A hidden video plus an ordinary one, sharing a tag, an author and a collection. */
+  function pair() {
+    const tag = library.tags.ensure({ name: 'Compartida', kind: 'topic' });
+    const collection = library.collections.create({ name: 'Mezclada' });
+
+    const open = addVideo({ title: 'A la vista', durationSeconds: 100 });
+    const shut = addVideo({
+      title: 'Guardado bajo llave',
+      url: 'https://vimeo.com/9441',
+      platform: 'vimeo',
+      durationSeconds: 900,
+    });
+    library.videos.update(shut.id, { hidden: true });
+
+    library.tags.addToVideos([open.id, shut.id], [tag.id]);
+    library.collections.addVideos(collection.id, [open.id, shut.id]);
+    return { tag, collection, open, shut };
+  }
+
+  test('a hidden video is absent from an ordinary search', () => {
+    const { shut } = pair();
+    const all = library.videos.search({ query: '' });
+    assert.equal(all.total, 1);
+    assert.ok(!all.videos.some((video) => video.id === shut.id));
+    // Naming it outright must not surface it either.
+    assert.equal(count('llave'), 0);
+    assert.equal(count('Guardado bajo llave'), 0);
+  });
+
+  test('asking for the container returns only the container', () => {
+    const { open, shut } = pair();
+    const result = library.videos.search({ query: '', hidden: 'only' });
+    assert.equal(result.total, 1);
+    assert.equal(result.videos[0].id, shut.id);
+    assert.ok(!result.videos.some((video) => video.id === open.id));
+  });
+
+  test('facets do not count what the container holds', () => {
+    pair();
+    const { facets } = library.videos.search({ query: '' });
+    const vimeo = facets.platforms.find((entry) => entry.value === 'vimeo');
+    assert.equal(vimeo, undefined);
+    assert.equal(facets.tags.find((entry) => entry.label === 'Compartida')?.count, 1);
+  });
+
+  test('stats and duplicates leave the container out', () => {
+    pair();
+    const stats = library.videos.stats();
+    assert.equal(stats.totalVideos, 1);
+    assert.equal(stats.totalDuration, 100);
+
+    // Two videos sharing a platform id are only a duplicate pair if both show.
+    const a = addVideo({ url: 'https://www.youtube.com/watch?v=dup11111111', platformId: 'gemelo' });
+    const b = addVideo({ url: 'https://www.youtube.com/watch?v=dup22222222', platformId: 'gemelo' });
+    assert.equal(library.videos.findDuplicates().length, 1);
+    library.videos.update(b.id, { hidden: true });
+    assert.equal(library.videos.findDuplicates().length, 0);
+    assert.ok(a.id && b.id);
+  });
+
+  test('sidebar counts do not betray it', () => {
+    const { tag, collection } = pair();
+    assert.equal(library.tags.list().find((entry) => entry.id === tag.id)?.videoCount, 1);
+    assert.equal(library.collections.list().find((entry) => entry.id === collection.id)?.videoCount, 1);
+    assert.equal(
+      library.authors.list().reduce((sum, author) => sum + (author.videoCount ?? 0), 0),
+      0,
+    );
+  });
+
+  test('a video can be filed into the container as it arrives', () => {
+    // The tick on the add dialog rides all the way down to the insert, rather
+    // than needing a second write to hide what was briefly on show.
+    const video = addVideo({ title: 'Llega ya guardado', hidden: true });
+    assert.equal(library.videos.getById(video.id)!.hidden, true);
+    assert.equal(library.videos.search({ query: '' }).total, 0);
+    assert.equal(library.videos.search({ query: '', hidden: 'only' }).total, 1);
+  });
+
+  test('a video can be taken back out of the container', () => {
+    const { shut } = pair();
+    library.videos.update(shut.id, { hidden: false });
+    assert.equal(library.videos.search({ query: '' }).total, 2);
+    assert.equal(library.videos.search({ query: '', hidden: 'only' }).total, 0);
+  });
+});

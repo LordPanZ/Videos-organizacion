@@ -27,7 +27,13 @@ const EMPTY_FACETS: Facets = {
   customFields: {},
 };
 
-export type Screen = 'home' | 'library' | 'dashboard' | 'downloads' | 'duplicates';
+/**
+ * Opens the container. This keeps prying eyes out of the library on a shared
+ * phone; it is not encryption, and the videos are stored like any other.
+ */
+const CONTAINER_CODE = '9441';
+
+export type Screen = 'home' | 'library' | 'dashboard' | 'downloads' | 'duplicates' | 'container';
 
 export interface Toast {
   id: number;
@@ -60,6 +66,11 @@ interface LibraryState {
 
   // view state
   screen: Screen;
+  /**
+   * Whether the container has been opened this session. Deliberately not
+   * stored anywhere: closing the app locks it again.
+   */
+  containerUnlocked: boolean;
   query: string;
   sort: SortSpec;
   layout: LayoutMode;
@@ -86,6 +97,9 @@ interface LibraryState {
   setLayout(layout: LayoutMode): void;
   setCardSize(size: number): void;
   setScreen(screen: Screen): void;
+  /** True when the code was right, which also opens the container screen. */
+  unlockContainer(code: string): boolean;
+  lockContainer(): void;
   setCollection(id: string | null): Promise<void>;
   select(id: string, mode: 'replace' | 'toggle' | 'range'): void;
   selectAll(): Promise<void>;
@@ -116,6 +130,7 @@ export const useLibrary = create<LibraryState>((set, get) => ({
 
   // The library opens on its front page, the way a streaming app does.
   screen: 'home',
+  containerUnlocked: false,
   query: '',
   sort: DEFAULT_SETTINGS.sort,
   layout: DEFAULT_SETTINGS.layout,
@@ -230,7 +245,19 @@ export const useLibrary = create<LibraryState>((set, get) => ({
   },
 
   setScreen(screen) {
+    // The container is the one screen you cannot simply navigate to.
+    if (screen === 'container' && !get().containerUnlocked) return;
     set({ screen });
+  },
+
+  unlockContainer(code) {
+    if (code.trim() !== CONTAINER_CODE) return false;
+    set({ containerUnlocked: true, screen: 'container' });
+    return true;
+  },
+
+  lockContainer() {
+    set({ containerUnlocked: false, screen: get().screen === 'container' ? 'home' : get().screen });
   },
 
   async setCollection(collectionId) {

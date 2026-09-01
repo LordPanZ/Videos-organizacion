@@ -24,6 +24,7 @@ export function AddDialog({ onClose, initialText = '' }: AddDialogProps) {
   const [recursive, setRecursive] = useState(true);
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
   const [collectionId, setCollectionId] = useState('');
+  const [hidden, setHidden] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const urls = extractUrls(text);
@@ -49,6 +50,7 @@ export function AddDialog({ onClose, initialText = '' }: AddDialogProps) {
       const shared = {
         tagIds: selectedTags.map((tag) => tag.id),
         collectionId: collectionId || undefined,
+        hidden,
       };
 
       if (mode === 'urls') {
@@ -207,6 +209,14 @@ export function AddDialog({ onClose, initialText = '' }: AddDialogProps) {
           onChange={(ids) => setSelectedTags(ids.map((id) => tags.find((tag) => tag.id === id)!).filter(Boolean))}
         />
       </div>
+
+      <label className="check container-check">
+        <input type="checkbox" checked={hidden} onChange={(event) => setHidden(event.target.checked)} />
+        <span>
+          <strong>🔒 Contenedor</strong>
+          <em>No aparecerán en la portada, ni en la biblioteca, ni en ninguna búsqueda. Solo dentro del contenedor.</em>
+        </span>
+      </label>
 
       <div className="field">
         <label htmlFor="add-collection">Añadir a la colección</label>

@@ -43,6 +43,8 @@ export interface VideoInput {
   language?: string | null;
   isLive?: boolean;
   isShort?: boolean;
+  /** File it straight into the container. */
+  hidden?: boolean;
   filePath?: string | null;
   fileSize?: number | null;
   fileFormat?: string | null;
@@ -62,6 +64,7 @@ export interface VideoPatch {
   notes?: string | null;
   color?: string | null;
   archived?: boolean;
+  hidden?: boolean;
   thumbnailPath?: string | null;
   thumbnailUrl?: string | null;
   filePath?: string | null;
@@ -96,6 +99,7 @@ const PATCH_COLUMNS: Record<keyof VideoPatch, string> = {
   notes: 'notes',
   color: 'color',
   archived: 'archived',
+  hidden: 'hidden',
   thumbnailPath: 'thumbnail_path',
   thumbnailUrl: 'thumbnail_url',
   filePath: 'file_path',
@@ -234,6 +238,10 @@ export class VideoRepository {
     }
 
     if (!options.includeArchived) clauses.push('v.archived = 0');
+
+    // The container is opt-in on every query. Anything that does not name it
+    // gets the library without it.
+    clauses.push(options.hidden === 'only' ? 'v.hidden = 1' : 'v.hidden = 0');
 
     return {
       from,
@@ -500,12 +508,12 @@ export class VideoRepository {
            id, url, url_hash, platform, platform_id, title, description, author_id,
            duration_seconds, published_at, thumbnail_path, thumbnail_url, width, height,
            view_count, like_count, comment_count, language, is_live, is_short,
-           file_path, file_size, file_format, added_at, updated_at, raw_metadata
+           file_path, file_size, file_format, hidden, added_at, updated_at, raw_metadata
          ) VALUES (
            @id, @url, @urlHash, @platform, @platformId, @title, @description, @authorId,
            @durationSeconds, @publishedAt, @thumbnailPath, @thumbnailUrl, @width, @height,
            @viewCount, @likeCount, @commentCount, @language, @isLive, @isShort,
-           @filePath, @fileSize, @fileFormat, @addedAt, @updatedAt, @rawMetadata
+           @filePath, @fileSize, @fileFormat, @hidden, @addedAt, @updatedAt, @rawMetadata
          )`,
       )
       .run({
@@ -532,6 +540,7 @@ export class VideoRepository {
         filePath: input.filePath ?? null,
         fileSize: input.fileSize ?? null,
         fileFormat: input.fileFormat ?? null,
+        hidden: input.hidden ? 1 : 0,
         addedAt: now,
         updatedAt: now,
         rawMetadata: input.rawMetadata === undefined ? null : JSON.stringify(input.rawMetadata),
@@ -673,14 +682,14 @@ export class VideoRepository {
            SUM(CASE WHEN favorite = 1 THEN 1 ELSE 0 END)   AS favorites,
            SUM(CASE WHEN availability IN ('unavailable','private','geoblocked') THEN 1 ELSE 0 END) AS unavailable,
            MAX(added_at)                                   AS newest
-         FROM videos WHERE archived = 0`,
+         FROM videos WHERE archived = 0 AND hidden = 0`,
       )
       .get() as Row;
 
     const untagged = this.db
       .prepare(
         `SELECT COUNT(*) AS n FROM videos v
-         WHERE v.archived = 0 AND NOT EXISTS (SELECT 1 FROM video_tags vt WHERE vt.video_id = v.id)`,
+         WHERE v.archived = 0 AND v.hidden = 0 AND NOT EXISTS (SELECT 1 FROM video_tags vt WHERE vt.video_id = v.id)`,
       )
       .get() as Row;
 
@@ -688,7 +697,7 @@ export class VideoRepository {
       .prepare(
         `SELECT COUNT(*) AS n FROM (
            SELECT platform, platform_id FROM videos
-           WHERE platform_id IS NOT NULL AND archived = 0
+           WHERE platform_id IS NOT NULL AND archived = 0 AND hidden = 0
            GROUP BY platform, platform_id HAVING COUNT(*) > 1
          )`,
       )
@@ -697,7 +706,7 @@ export class VideoRepository {
     const byMonth = this.db
       .prepare(
         `SELECT strftime('%Y-%m', added_at) AS month, COUNT(*) AS count
-         FROM videos WHERE archived = 0 GROUP BY month ORDER BY month DESC LIMIT 24`,
+         FROM videos WHERE archived = 0 AND hidden = 0 GROUP BY month ORDER BY month DESC LIMIT 24`,
       )
       .all() as Row[];
 
@@ -719,7 +728,7 @@ export class VideoRepository {
       averageDuration: total > 0 ? Math.round(duration / total) : 0,
       newestAddedAt: scalar.newest ?? null,
       byPlatform: facetQuery(
-        `SELECT platform AS value, COUNT(*) AS count FROM videos WHERE archived = 0 GROUP BY platform ORDER BY count DESC`,
+        `SELECT platform AS value, COUNT(*) AS count FROM videos WHERE archived = 0 AND hidden = 0 GROUP BY platform ORDER BY count DESC`,
         (r) => ({
           value: String(r.value),
           label: PLATFORM_LABELS[r.value as Platform] ?? String(r.value),
@@ -730,21 +739,21 @@ export class VideoRepository {
       byTag: facetQuery(
         `SELECT t.slug AS value, t.name AS label, t.color AS color, COUNT(*) AS count
          FROM video_tags vt JOIN tags t ON t.id = vt.tag_id JOIN videos v ON v.id = vt.video_id
-         WHERE v.archived = 0 GROUP BY t.id ORDER BY count DESC LIMIT 40`,
+         WHERE v.archived = 0 AND v.hidden = 0 GROUP BY t.id ORDER BY count DESC LIMIT 40`,
         (r) => ({ value: String(r.value), label: String(r.label), count: Number(r.count), color: r.color ?? null }),
       ),
       byAuthor: facetQuery(
         `SELECT a.id AS value, a.name AS label, COUNT(*) AS count
-         FROM videos v JOIN authors a ON a.id = v.author_id WHERE v.archived = 0
+         FROM videos v JOIN authors a ON a.id = v.author_id WHERE v.archived = 0 AND v.hidden = 0
          GROUP BY a.id ORDER BY count DESC LIMIT 40`,
         (r) => ({ value: String(r.value), label: String(r.label), count: Number(r.count) }),
       ),
       byWatchStatus: facetQuery(
-        `SELECT watch_status AS value, COUNT(*) AS count FROM videos WHERE archived = 0 GROUP BY watch_status`,
+        `SELECT watch_status AS value, COUNT(*) AS count FROM videos WHERE archived = 0 AND hidden = 0 GROUP BY watch_status`,
         (r) => ({ value: String(r.value), label: String(r.value), count: Number(r.count) }),
       ),
       byRating: facetQuery(
-        `SELECT rating AS value, COUNT(*) AS count FROM videos WHERE archived = 0 GROUP BY rating ORDER BY rating DESC`,
+        `SELECT rating AS value, COUNT(*) AS count FROM videos WHERE archived = 0 AND hidden = 0 GROUP BY rating ORDER BY rating DESC`,
         (r) => ({ value: String(r.value), label: `${r.value} ★`, count: Number(r.count) }),
       ),
       byMonth: byMonth.reverse().map((r) => ({ month: String(r.month), count: Number(r.count) })),
@@ -758,7 +767,7 @@ export class VideoRepository {
     const byPlatformId = this.db
       .prepare(
         `SELECT platform, platform_id, group_concat(id) AS ids FROM videos
-         WHERE platform_id IS NOT NULL GROUP BY platform, platform_id HAVING COUNT(*) > 1`,
+         WHERE platform_id IS NOT NULL AND hidden = 0 GROUP BY platform, platform_id HAVING COUNT(*) > 1`,
       )
       .all() as Row[];
 
@@ -775,7 +784,7 @@ export class VideoRepository {
       .prepare(
         `SELECT lower(v.title) AS t, COALESCE(v.author_id, '') AS au, group_concat(v.id) AS ids
          FROM videos v
-         WHERE v.platform_id IS NULL
+         WHERE v.platform_id IS NULL AND v.hidden = 0
          GROUP BY t, au HAVING COUNT(*) > 1`,
       )
       .all() as Row[];

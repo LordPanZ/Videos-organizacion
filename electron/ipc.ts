@@ -223,6 +223,7 @@ export function registerIpc(context: AppContext): void {
         downloadThumbnail: settings.autoDownloadThumbnails,
         tagIds: request.tagIds,
         collectionId: request.collectionId,
+        hidden: request.hidden,
         concurrency: settings.maxConcurrentMetadata,
         signal: controller.signal,
         onProgress: (progress) => broadcast('import:progress', progress),

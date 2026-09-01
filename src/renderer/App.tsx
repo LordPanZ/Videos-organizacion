@@ -9,6 +9,8 @@ import { DetailPanel } from './components/DetailPanel.tsx';
 import { Dashboard } from './components/Dashboard.tsx';
 import { DownloadsPanel } from './components/DownloadsPanel.tsx';
 import { DuplicatesView } from './components/DuplicatesView.tsx';
+import { ContainerView } from './components/ContainerView.tsx';
+import { ContainerDialog } from './components/ContainerDialog.tsx';
 import { AddDialog } from './components/AddDialog.tsx';
 import { SettingsDialog } from './components/SettingsDialog.tsx';
 import { FieldsDialog } from './components/FieldsDialog.tsx';
@@ -34,6 +36,7 @@ type Dialog =
   | { kind: 'settings' }
   | { kind: 'fields' }
   | { kind: 'help' }
+  | { kind: 'container' }
   | { kind: 'palette' }
   | { kind: 'bulk-tags' }
   | { kind: 'bulk-field' }
@@ -403,6 +406,7 @@ export function App() {
             onManageTags={() => setDialog({ kind: 'fields' })}
             onNewCollection={() => setDialog({ kind: 'collection', id: null })}
             onEditCollection={(id) => setDialog({ kind: 'collection', id })}
+            onOpenContainer={() => setDialog({ kind: 'container' })}
             onNavigate={closeDrawerOnNarrowScreens}
           />
           {/* Only rendered as a real overlay below the drawer breakpoint. */}
@@ -435,6 +439,7 @@ export function App() {
             {screen === 'dashboard' && <Dashboard />}
             {screen === 'downloads' && <DownloadsPanel />}
             {screen === 'duplicates' && <DuplicatesView />}
+            {screen === 'container' && <ContainerView />}
           </div>
 
           {detailId && <DetailPanel videoId={detailId} onClose={() => openDetail(null)} />}
@@ -449,6 +454,7 @@ export function App() {
 
       {dialog.kind === 'add' && <AddDialog onClose={closeDialog} initialText={dialog.text} />}
       {dialog.kind === 'settings' && <SettingsDialog onClose={closeDialog} />}
+      {dialog.kind === 'container' && <ContainerDialog onClose={closeDialog} />}
       {dialog.kind === 'fields' && <FieldsDialog onClose={closeDialog} />}
       {dialog.kind === 'collection' && <CollectionDialog id={dialog.id} onClose={closeDialog} />}
       {dialog.kind === 'palette' && <CommandPalette commands={commands} onClose={closeDialog} />}

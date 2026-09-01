@@ -130,6 +130,12 @@ mensaje concreto en lugar de devolver cero resultados en silencio.
 - **Edición en bloque**: etiquetar, valorar, asignar campos, mover a colecciones o descargar cientos
   de vídeos de una vez.
 - **Detección de duplicados**, con un botón para conservar la copia buena.
+- **Contenedor**: al pegar un enlace puedes marcar la casilla *Contenedor* y ese vídeo se guarda
+  aparte. No sale en la portada, ni en la biblioteca, ni en las búsquedas, ni en las estadísticas,
+  ni en los recuentos del panel lateral. Para verlo hay que abrir *Contenedor* y escribir la clave
+  (**9441**), que vuelve a pedirse cada vez que se abre la aplicación. Es una tapa contra miradas
+  ajenas en un móvil compartido, **no cifrado**: los vídeos se guardan como todos los demás y
+  siguen apareciendo en las copias de seguridad que exportes.
 
 ### Guardar de verdad
 

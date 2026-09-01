@@ -29,7 +29,8 @@ export class CollectionRepository {
   list(): Collection[] {
     const rows = this.db
       .prepare(
-        `SELECT c.*, (SELECT COUNT(*) FROM collection_items ci WHERE ci.collection_id = c.id) AS video_count
+        `SELECT c.*, (SELECT COUNT(*) FROM collection_items ci JOIN videos v ON v.id = ci.video_id
+          WHERE ci.collection_id = c.id AND v.hidden = 0) AS video_count
          FROM collections c ORDER BY c.position ASC, c.name COLLATE NOCASE`,
       )
       .all() as Row[];
@@ -39,7 +40,8 @@ export class CollectionRepository {
   getById(id: string): Collection | null {
     const row = this.db
       .prepare(
-        `SELECT c.*, (SELECT COUNT(*) FROM collection_items ci WHERE ci.collection_id = c.id) AS video_count
+        `SELECT c.*, (SELECT COUNT(*) FROM collection_items ci JOIN videos v ON v.id = ci.video_id
+          WHERE ci.collection_id = c.id AND v.hidden = 0) AS video_count
          FROM collections c WHERE c.id = ?`,
       )
       .get(id) as Row | undefined;

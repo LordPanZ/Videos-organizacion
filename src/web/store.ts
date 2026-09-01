@@ -162,6 +162,17 @@ export class WebLibrary {
     this.persist('videos', [record]);
   }
 
+  /**
+   * Every record except the container's.
+   *
+   * Counts, stats, duplicate detection and field suggestions all walk the
+   * library, and any one of them walking the raw map would give away what is
+   * in the container without ever showing it.
+   */
+  private *visible(): Generator<VideoRecord> {
+    for (const record of this.videos.values()) if (!record.hidden) yield record;
+  }
+
   /* ---------------------------------------------------------------- reading */
 
   private resolveTags(ids: string[]): Tag[] {
@@ -377,7 +388,9 @@ export class WebLibrary {
       ? collection.videoIds.map((id) => this.videos.get(id)).filter((r): r is VideoRecord => r !== undefined)
       : [...this.videos.values()];
 
+    const wantHidden = options.hidden === 'only';
     const matched = scope.filter((record) => {
+      if (record.hidden !== wantHidden) return false;
       if (!options.includeArchived && record.archived) return false;
       return evaluate(parsed.root, this.searchableFor(record), context);
     });
@@ -520,6 +533,7 @@ export class WebLibrary {
     language?: string | null;
     isShort?: boolean;
     isLive?: boolean;
+    hidden?: boolean;
   }): Video | null {
     const urlKey = parseVideoUrl(input.url).canonicalUrl;
     for (const existing of this.videos.values()) {
@@ -554,6 +568,7 @@ export class WebLibrary {
       notes: null,
       color: null,
       archived: false,
+      hidden: input.hidden ?? false,
       availability: 'unknown',
       lastCheckedAt: null,
       addedAt: now,
@@ -595,6 +610,7 @@ export class WebLibrary {
       'notes',
       'color',
       'archived',
+      'hidden',
       'availability',
       'lastCheckedAt',
     ];
@@ -664,7 +680,7 @@ export class WebLibrary {
 
   listTags(): Tag[] {
     const counts = new Map<string, number>();
-    for (const record of this.videos.values()) {
+    for (const record of this.visible()) {
       for (const tagId of record.tagIds) counts.set(tagId, (counts.get(tagId) ?? 0) + 1);
     }
     return [...this.tags.values()]
@@ -814,7 +830,7 @@ export class WebLibrary {
 
   listAuthors(): Author[] {
     const counts = new Map<string, number>();
-    for (const record of this.videos.values()) {
+    for (const record of this.visible()) {
       if (record.authorId) counts.set(record.authorId, (counts.get(record.authorId) ?? 0) + 1);
     }
     return [...this.authors.values()]
@@ -854,9 +870,14 @@ export class WebLibrary {
 
   /* ----------------------------------------------------------- collections */
 
+  /** Members of a collection that are not in the container. */
+  private countVisible(videoIds: string[]): number {
+    return videoIds.filter((id) => this.videos.get(id)?.hidden === false).length;
+  }
+
   listCollections(): Collection[] {
     return [...this.collections.values()]
-      .map(({ videoIds, ...rest }) => ({ ...rest, videoCount: videoIds.length }))
+      .map(({ videoIds, ...rest }) => ({ ...rest, videoCount: this.countVisible(videoIds) }))
       .sort((a, b) => a.position - b.position || a.name.localeCompare(b.name, 'es'));
   }
 
@@ -880,7 +901,7 @@ export class WebLibrary {
     this.collections.set(record.id, record);
     this.persist('collections', [record]);
     const { videoIds, ...rest } = record;
-    return { ...rest, videoCount: videoIds.length };
+    return { ...rest, videoCount: this.countVisible(videoIds) };
   }
 
   updateCollection(id: string, patch: Partial<Collection>): void {
@@ -931,7 +952,7 @@ export class WebLibrary {
   collectionsForVideo(videoId: string): Collection[] {
     return [...this.collections.values()]
       .filter((collection) => collection.videoIds.includes(videoId))
-      .map(({ videoIds, ...rest }) => ({ ...rest, videoCount: videoIds.length }));
+      .map(({ videoIds, ...rest }) => ({ ...rest, videoCount: this.countVisible(videoIds) }));
   }
 
   /* --------------------------------------------------------- custom fields */
@@ -1016,7 +1037,7 @@ export class WebLibrary {
 
   fieldValues(key: string): string[] {
     const counts = new Map<string, number>();
-    for (const record of this.videos.values()) {
+    for (const record of this.visible()) {
       const stored = record.customFields[key];
       if (stored === null || stored === undefined) continue;
       for (const value of Array.isArray(stored) ? stored.map(String) : [String(stored)]) {
@@ -1121,7 +1142,7 @@ export class WebLibrary {
   /* ------------------------------------------------------------ analytics */
 
   stats(): LibraryStats {
-    const active = [...this.videos.values()].filter((record) => !record.archived);
+    const active = [...this.visible()].filter((record) => !record.archived);
     const duration = active.reduce((sum, record) => sum + (record.durationSeconds ?? 0), 0);
 
     const monthly = new Map<string, number>();
@@ -1160,7 +1181,7 @@ export class WebLibrary {
 
   duplicates(): DuplicateGroup[] {
     const groups = new Map<string, VideoRecord[]>();
-    for (const record of this.videos.values()) {
+    for (const record of this.visible()) {
       const key = record.platformId
         ? `${record.platform}:${record.platformId}`
         : `${normalize(record.title)}|${record.authorId ?? ''}`;

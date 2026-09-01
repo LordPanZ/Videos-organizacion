@@ -17,6 +17,8 @@ export interface ImportOptions {
   tagIds?: string[];
   /** Add each imported video to this collection. */
   collectionId?: string;
+  /** File each imported video in the container, out of every other view. */
+  hidden?: boolean;
   /** How many URLs to process at once. */
   concurrency?: number;
   signal?: AbortSignal;
@@ -174,6 +176,7 @@ export class Importer {
       language: seed.language,
       isLive: seed.isLive,
       isShort: seed.isShort,
+      hidden: options.hidden ?? false,
       rawMetadata: seed.raw,
     });
 

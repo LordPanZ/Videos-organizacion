@@ -172,6 +172,7 @@ export function mapVideo(
     notes: row.notes ?? null,
     color: row.color ?? null,
     archived: bool(row.archived),
+    hidden: bool(row.hidden),
     filePath: row.file_path ?? null,
     fileSize: row.file_size ?? null,
     fileFormat: row.file_format ?? null,

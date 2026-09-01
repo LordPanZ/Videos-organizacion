@@ -157,7 +157,7 @@ export interface DetailPanelProps {
 
 /** Everything about one video, and every way to change it. */
 export function DetailPanel({ videoId, onClose }: DetailPanelProps) {
-  const { fields, patchVideo, refresh, toast, settings } = useLibrary();
+  const { fields, patchVideo, refresh, toast, settings, containerUnlocked } = useLibrary();
   const [video, setVideo] = useState<Video | null>(null);
   const [bookmarks, setBookmarks] = useState<VideoBookmark[]>([]);
   const [inCollections, setInCollections] = useState<Collection[]>([]);
@@ -332,6 +332,22 @@ export function DetailPanel({ videoId, onClose }: DetailPanelProps) {
         </div>
 
         <div className="row row-wrap" style={{ gap: 6, marginBottom: 14 }}>
+          {/* Only offered once the container is open, so the option never
+              hints at itself to someone who has not unlocked it. */}
+          {containerUnlocked && (
+            <button
+              type="button"
+              className="btn btn-sm"
+              title={
+                video.hidden
+                  ? 'Devolverlo a la biblioteca, donde vuelve a verse'
+                  : 'Guardarlo en el contenedor, fuera de la portada y de las búsquedas'
+              }
+              onClick={() => void update({ hidden: !video.hidden })}
+            >
+              {video.hidden ? '🔓 Sacar del contenedor' : '🔒 Guardar en el contenedor'}
+            </button>
+          )}
           <button
             type="button"
             className="btn btn-sm"

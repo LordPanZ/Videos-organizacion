@@ -178,6 +178,8 @@ export interface Video {
   notes: string | null;
   color: string | null;
   archived: boolean;
+  /** Kept in the container: excluded from every view that has not unlocked it. */
+  hidden: boolean;
 
   // Local copy
   filePath: string | null;
@@ -258,6 +260,11 @@ export interface QueryOptions {
   /** Restrict to a manual collection (respects its stored ordering). */
   collectionId?: string;
   includeArchived?: boolean;
+  /**
+   * How the container is treated. Left out, hidden videos are excluded — the
+   * default has to be the safe one, or a new caller leaks them by omission.
+   */
+  hidden?: 'exclude' | 'only';
   /**
    * Skip facet counting. The home screen runs a query per row and never shows
    * facets, so computing them would be pure waste.

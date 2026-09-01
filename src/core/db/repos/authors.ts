@@ -26,7 +26,7 @@ export class AuthorRepository {
   list(): Author[] {
     const rows = this.db
       .prepare(
-        `SELECT a.*, (SELECT COUNT(*) FROM videos v WHERE v.author_id = a.id) AS video_count
+        `SELECT a.*, (SELECT COUNT(*) FROM videos v WHERE v.author_id = a.id AND v.hidden = 0) AS video_count
          FROM authors a ORDER BY video_count DESC, a.name COLLATE NOCASE`,
       )
       .all() as Row[];

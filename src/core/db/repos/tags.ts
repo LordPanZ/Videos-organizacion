@@ -25,7 +25,8 @@ export class TagRepository {
   list(): Tag[] {
     const rows = this.db
       .prepare(
-        `SELECT t.*, (SELECT COUNT(*) FROM video_tags vt WHERE vt.tag_id = t.id) AS video_count
+        `SELECT t.*, (SELECT COUNT(*) FROM video_tags vt JOIN videos v ON v.id = vt.video_id
+          WHERE vt.tag_id = t.id AND v.hidden = 0) AS video_count
          FROM tags t ORDER BY t.name COLLATE NOCASE`,
       )
       .all() as Row[];

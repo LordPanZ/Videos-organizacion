@@ -232,6 +232,17 @@ export const MIGRATIONS: Migration[] = [
       );
     `,
   },
+  {
+    version: 2,
+    name: 'container',
+    sql: `
+      -- Videos kept out of sight. Every query excludes these unless it asks
+      -- for them, so the flag lives on the row rather than in a side table:
+      -- a JOIN that someone forgets would put them back on screen.
+      ALTER TABLE videos ADD COLUMN hidden INTEGER NOT NULL DEFAULT 0;
+      CREATE INDEX idx_videos_hidden ON videos (hidden);
+    `,
+  },
 ];
 
 export const LATEST_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;

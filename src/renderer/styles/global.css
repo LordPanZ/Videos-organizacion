@@ -1814,3 +1814,64 @@ kbd {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* ------------------------------------------------------------------ container */
+
+.container-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* A code, not a word: wide tracking makes the digits easy to check. */
+.code-input {
+  width: 100%;
+  font-size: 22px;
+  letter-spacing: 0.5em;
+  text-align: center;
+  padding: 12px 0;
+}
+
+.check.container-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 11px 12px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  cursor: pointer;
+}
+
+.container-check input {
+  margin-top: 2px;
+  flex: none;
+}
+
+.container-check span {
+  display: grid;
+  gap: 3px;
+}
+
+.container-check em {
+  font-style: normal;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+/* The container has no bulk actions, so the selection box would be a control
+   that does nothing. */
+.container-grid .card-select {
+  display: none;
+}

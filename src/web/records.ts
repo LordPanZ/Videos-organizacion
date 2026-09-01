@@ -42,6 +42,7 @@ export interface VideoRecord {
   notes: string | null;
   color: string | null;
   archived: boolean;
+  hidden: boolean;
   availability: Availability;
   lastCheckedAt: string | null;
   addedAt: string;
@@ -92,6 +93,7 @@ export function toVideo(record: VideoRecord, tags: Tag[], author: Author | null)
     notes: record.notes,
     color: record.color,
     archived: record.archived,
+    hidden: record.hidden,
     filePath: null,
     fileSize: null,
     fileFormat: null,

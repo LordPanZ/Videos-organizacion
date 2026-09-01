@@ -26,6 +26,8 @@ export interface ImportRequest {
   collectionId?: string;
   fetchMetadata?: boolean;
   autoTag?: boolean;
+  /** File everything imported straight into the container. */
+  hidden?: boolean;
 }
 
 export interface ScanRequest {
