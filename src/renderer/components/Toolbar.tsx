@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLibrary } from '../store/useLibrary.ts';
 import type { LayoutMode, SortField } from '../../shared/types.ts';
+import type { Screen } from '../store/useLibrary.ts';
 
 const LAYOUTS: { value: LayoutMode; icon: string; title: string }[] = [
   { value: 'grid', icon: '▦', title: 'Cuadrícula (Ctrl+1)' },
@@ -35,10 +36,14 @@ export interface ToolbarProps {
 
 /** Search box, sorting, layout switch and the primary add action. */
 export function Toolbar({ onAdd, onOpenHelp, onOpenSettings, searchRef, browsing }: ToolbarProps) {
-  const { query, setQuery, runQuery, sort, setSort, layout, setLayout, cardSize, setCardSize, total, loading, toggleSidebar } =
-    useLibrary();
+  const {
+    query, setQuery, runQuery, sort, setSort, layout, setLayout, cardSize, setCardSize,
+    total, loading, toggleSidebar, screen, setScreen,
+  } = useLibrary();
   const [draft, setDraft] = useState(query);
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Where searching took us away from, so emptying the box can put us back.
+  const cameFrom = useRef<Screen | null>(null);
 
   // Keep the box in sync when the sidebar or a saved view rewrites the query.
   useEffect(() => {
@@ -48,6 +53,17 @@ export function Toolbar({ onAdd, onOpenHelp, onOpenSettings, searchRef, browsing
   const commit = (value: string, immediate = false) => {
     setDraft(value);
     setQuery(value);
+
+    // Results are shown by the grid, so a search from anywhere else has to go
+    // there — otherwise typing looks like it does nothing at all. The
+    // container is left alone: a search must not tip someone out of it.
+    if (value.trim() !== '' && screen !== 'library' && screen !== 'container') {
+      cameFrom.current = screen;
+      setScreen('library');
+    } else if (value.trim() === '' && screen === 'library' && cameFrom.current !== null) {
+      setScreen(cameFrom.current);
+      cameFrom.current = null;
+    }
     if (debounce.current) clearTimeout(debounce.current);
     if (immediate) {
       void runQuery(value);
