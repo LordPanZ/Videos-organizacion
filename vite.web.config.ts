@@ -11,6 +11,9 @@ import { fileURLToPath, URL } from 'node:url';
  */
 export default defineConfig({
   base: process.env.VIDEOTECA_BASE ?? '/Videos-organizacion/',
+  // Stamped into the build so the interface can say which one it is running.
+  // Without it, "did the update reach my phone?" is unanswerable.
+  define: { __BUILD_STAMP__: JSON.stringify(new Date().toISOString().slice(0, 16).replace('T', ' ')) },
   plugins: [react()],
   resolve: {
     alias: {

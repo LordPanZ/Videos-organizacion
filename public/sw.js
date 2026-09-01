@@ -5,7 +5,7 @@
  * offline and update when a new build ships, and thumbnails, which come from
  * other origins as opaque responses and simply need to stick around.
  */
-const SHELL_CACHE = 'videoteca-shell-v1';
+const SHELL_CACHE = 'videoteca-shell-v2';
 const IMAGE_CACHE = 'videoteca-img-v1';
 const IMAGE_LIMIT = 600;
 
@@ -70,11 +70,16 @@ self.addEventListener('fetch', (event) => {
 
   // Navigation: try the network so a new build is picked up, fall back to the
   // cached shell when there is no connection.
+  //
+  // `cache: 'reload'` skips the browser's own HTTP cache. Without it the page
+  // that names which script to load can be served stale for as long as its
+  // max-age says, which pins the app to an old build even though the worker
+  // asked the network for it.
   if (request.mode === 'navigate') {
     event.respondWith(
       (async () => {
         try {
-          const response = await fetch(request);
+          const response = await fetch(request, { cache: 'reload' });
           const cache = await caches.open(SHELL_CACHE);
           void cache.put('./index.html', response.clone());
           return response;

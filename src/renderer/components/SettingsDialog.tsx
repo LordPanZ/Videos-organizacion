@@ -16,6 +16,48 @@ const TABS: [Tab, string][] = [
   ['datos', '💾 Datos'],
 ];
 
+/**
+ * Which build is running, and a way out of a stale one.
+ *
+ * An installed web app keeps its own copy of the page, so a phone can sit on
+ * an old build without any sign that it has. This says which one it is, and
+ * clears the stored copy so the next start fetches the current one.
+ */
+function UpdateBlock() {
+  const stamp = typeof __BUILD_STAMP__ === 'string' ? __BUILD_STAMP__ : null;
+  if (stamp === null) return null;
+
+  const refresh = async () => {
+    if (!window.confirm('Se descargará la versión más reciente. Tus vídeos no se tocan. ¿Continuar?')) return;
+    try {
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(registrations.map((registration) => registration.unregister()));
+      }
+      if ('caches' in window) {
+        // Only the app's own files. The library lives in IndexedDB and is not
+        // touched by any of this.
+        const keys = await caches.keys();
+        await Promise.all(keys.filter((key) => key.startsWith('videoteca-shell')).map((key) => caches.delete(key)));
+      }
+    } finally {
+      window.location.reload();
+    }
+  };
+
+  return (
+    <div className="field" style={{ marginTop: 18 }}>
+      <label>Versión instalada</label>
+      <p className="dim" style={{ margin: '0 0 8px', fontSize: 12.5 }}>
+        Compilada el {stamp} (UTC).
+      </p>
+      <button type="button" className="btn" onClick={() => void refresh()}>
+        Buscar una versión más reciente
+      </button>
+    </div>
+  );
+}
+
 export function SettingsDialog({ onClose }: { onClose(): void }) {
   const { settings, applySettings, toast } = useLibrary();
   const [tab, setTab] = useState<Tab>('apariencia');
@@ -358,6 +400,8 @@ export function SettingsDialog({ onClose }: { onClose(): void }) {
             >
               Vaciar caché de miniaturas
             </button>
+
+            <UpdateBlock />
           </div>
         </>
       )}

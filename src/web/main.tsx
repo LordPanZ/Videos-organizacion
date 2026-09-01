@@ -64,8 +64,24 @@ void start();
 // single-file build has no separate worker to register, so it opts out.
 if ('serviceWorker' in navigator && import.meta.env.PROD && import.meta.env.VITE_SINGLE_FILE !== 'true') {
   window.addEventListener('load', () => {
-    void navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch(() => {
-      // Offline support is a bonus; the app works without it.
+    void navigator.serviceWorker
+      .register(`${import.meta.env.BASE_URL}sw.js`)
+      .then((registration) => {
+        // Ask on every launch rather than waiting for the browser's own
+        // schedule, which can leave a phone on an old build for a day.
+        void registration.update();
+      })
+      .catch(() => {
+        // Offline support is a bonus; the app works without it.
+      });
+
+    // A worker that takes over mid-session leaves this page running the code
+    // it loaded before, so reload once to land on the build that just won.
+    let reloading = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (reloading) return;
+      reloading = true;
+      window.location.reload();
     });
   });
 }
